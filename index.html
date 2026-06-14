@@ -14,7 +14,6 @@
     </header>
 
     <div class="main-container">
-      <!-- 左侧边栏 -->
       <aside class="sidebar">
         <div class="stats">
           <div class="stat-card">
@@ -37,61 +36,159 @@
           <button data-filter="completed" class="filter-btn">已完成</button>
         </div>
 
-        <div class="action-group">
-          <button id="clearCompletedBtn" class="secondary-btn">清除已完成</button>
-          <button id="exportBtn" class="secondary-btn">导出数据</button>
-          <button id="settingsBtn" class="secondary-btn">
+        <div class="sidebar-footer">
+          <button id="settingsBtn" class="settings-entry-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H5.78a1.65 1.65 0 0 0-1.51 1 1.65 1.65 0 0 0 .33 1.82l.07.09A10 10 0 0 0 12 18a10 10 0 0 0 6.18-2.22l.07-.09z" />
-              <path d="M4.6 9a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H18.22a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.07-.09A10 10 0 0 0 12 6a10 10 0 0 0-6.18 2.22z" />
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+              <circle cx="12" cy="12" r="3"/>
             </svg>
             设置
           </button>
         </div>
       </aside>
 
-      <!-- 右侧主要内容 -->
-      <main class="content">
-        <div class="add-task-area">
-          <div class="add-task-row">
-            <input type="text" id="taskInput" placeholder="任务名称..." autocomplete="off">
-            <input type="date" id="dueDateInput" placeholder="截止日期">
-            <button id="addBtn" class="primary-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              添加
-            </button>
+      <main class="content-area">
+        <div id="tasksView" class="view-panel active">
+          <div class="input-section">
+            <div class="input-wrapper">
+              <input type="text" id="taskInput" placeholder="添加新任务...">
+            </div>
+            <div class="date-input-container" id="dueDateContainer">
+              <input type="date" id="dueDateInput">
+            </div>
+            <button id="addBtn" class="primary-btn">添加任务</button>
+          </div>
+
+          <div class="toolbar">
+            <div style="width: 120px;">
+              <select id="sortSelect">
+                <option value="create-desc">创建时间 (新->旧)</option>
+                <option value="create-asc">创建时间 (旧->新)</option>
+                <option value="due-asc" id="sortDueAscOpt">截止日期 (近->远)</option>
+              </select>
+            </div>
+            <button id="clearCompletedBtn" class="secondary-btn">清除已完成</button>
+          </div>
+
+          <div class="todo-list-container">
+            <div id="todoList" class="todo-list"></div>
           </div>
         </div>
 
-        <div class="sort-bar">
-          <span class="sort-label">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18M6 12h12M10 18h4" />
-            </svg>
-            排序：
-          </span>
-          <select id="sortSelect" class="sort-select">
-            <option value="dateDesc">创建时间（新→旧）</option>
-            <option value="dateAsc">创建时间（旧→新）</option>
-            <option value="dueDateAsc">截止日期（近→远）</option>
-            <option value="dueDateDesc">截止日期（远→近）</option>
-          </select>
-        </div>
+        <div id="settingsView" class="view-panel">
+          <div class="settings-header">
+            <button id="closeSettingsViewBtn" class="icon-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </button>
+            <h2>设置</h2>
+          </div>
 
-        <div class="todo-list-container">
-          <ul id="todoList" class="todo-list">
-            <li class="empty-placeholder">暂无任务，输入第一条任务开始</li>
-          </ul>
+          <div class="settings-section">
+            <h3>常规偏好</h3>
+            <div class="settings-list">
+              <div class="settings-item">
+                <div class="settings-info">
+                  <span class="settings-title">深色模式</span>
+                  <span class="settings-desc">切换应用程序的主题外观</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="darkModeToggle">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="settings-item">
+                <div class="settings-info">
+                  <span class="settings-title">启用截止日期</span>
+                  <span class="settings-desc">为任务分配并追踪到期时间</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="dueDateEnableToggle">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>数据管理</h3>
+            <div class="settings-list">
+              <div class="settings-item">
+                <div class="settings-info">
+                  <span class="settings-title">导入数据</span>
+                  <span class="settings-desc">从 JSON 文件恢复任务列表</span>
+                </div>
+                <button id="importDataBtn" class="secondary-btn">导入</button>
+              </div>
+              <div class="settings-item">
+                <div class="settings-info">
+                  <span class="settings-title">备份数据</span>
+                  <span class="settings-desc">将全部任务导出为 JSON 文件</span>
+                </div>
+                <button id="exportDataBtn" class="secondary-btn">导出</button>
+              </div>
+              <div class="settings-item">
+                <div class="settings-info">
+                  <span class="settings-title" style="color: #d32f2f;">清空全部数据</span>
+                  <span class="settings-desc">彻底抹除全部存储的任务且不可逆</span>
+                </div>
+                <button id="deleteAllDataBtn" class="danger-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  清除
+                </button>
+              </div>
+              <div class="settings-item">
+                <div class="settings-info">
+                  <span class="settings-title">重置所有设置</span>
+                  <span class="settings-desc">恢复开关选项至出厂默认配置</span>
+                </div>
+                <button id="resetSettingsBtn" class="secondary-btn">重置</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>关于应用</h3>
+            <div class="about-info">
+              <p style="font-weight: 500;">Todo List Desktop</p>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">版本：<span id="settingsVersionSpan">1.0.0</span></p>
+              <button id="openGithubBtn" class="secondary-btn github-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                </svg>
+                GitHub 开源仓库
+              </button>
+            </div>
+            <div class="settings-list">
+              <div class="settings-item">
+                <div class="settings-info">
+                  <span class="settings-title">检测新版本</span>
+                  <span class="settings-desc">拉取远程发布版本核对状态</span>
+                </div>
+                <div class="update-info" style="gap: 12px;">
+                  <span id="updateStatusText" style="font-size: 0.85rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    检查更新
+                  </span>
+                  <button id="checkUpdateBtn" class="secondary-btn" style="width: auto;">检查更新</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
   </div>
 
-  <!-- 编辑任务模态框 -->
   <dialog id="editModal" class="modal">
     <div class="modal-content">
       <h3>编辑任务</h3>
@@ -103,85 +200,25 @@
       </div>
     </div>
   </dialog>
-  
-  <!-- 设置模态框（无 Emoji） -->
-  <dialog id="settingsModal" class="modal settings-modal">
-    <div class="modal-content">
-      <h3>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H5.78a1.65 1.65 0 0 0-1.51 1 1.65 1.65 0 0 0 .33 1.82l.07.09A10 10 0 0 0 12 18a10 10 0 0 0 6.18-2.22l.07-.09z" />
-          <path d="M4.6 9a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H18.22a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.07-.09A10 10 0 0 0 12 6a10 10 0 0 0-6.18 2.22z" />
-        </svg>
-        设置
-      </h3>
-      <div class="settings-item">
-        <label class="settings-label">
-          <span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle;">
-              <circle cx="12" cy="12" r="5" />
-              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-            </svg>
-            深色模式
-          </span>
-          <div class="toggle-switch">
-            <input type="checkbox" id="darkModeToggle">
-            <span class="toggle-slider"></span>
-          </div>
-        </label>
-      </div>
-      <div class="settings-item">
-        <label class="settings-label">
-          <span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            启用截止日期功能
-          </span>
-          <div class="toggle-switch">
-            <input type="checkbox" id="dueDateEnableToggle">
-            <span class="toggle-slider"></span>
-          </div>
-        </label>
-        <p class="settings-hint">关闭后将隐藏截止日期输入框及任务中的日期信息</p>
-      </div>
-      <div class="settings-item">
-        <div class="update-info">
-          <span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            当前版本: <span id="currentVersion">1.1.0</span>
-          </span>
-          <button id="checkUpdateBtn" class="secondary-btn" style="width: auto; padding: 6px 16px;">检查更新</button>
-        </div>
-      </div>
-      <div class="modal-buttons" style="margin-top: 16px;">
-        <button id="closeSettingsBtn" class="primary-btn">关闭</button>
-      </div>
-    </div>
-  </dialog>
 
-  <!-- 自定义通用弹窗 -->
   <dialog id="customDialog" class="custom-dialog">
     <div class="dialog-content">
-      <div class="dialog-icon" id="dialogIcon">
+      <div class="dialog-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path id="dialogIconPath" d="M12 8v4m0 4h.01M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" />
         </svg>
       </div>
-      <p id="dialogMessage">消息内容</p>
+      <p id="dialogMessage">提示内容</p>
       <div class="dialog-buttons">
         <button id="dialogConfirmBtn" class="primary-btn">确定</button>
-        <button id="dialogCancelBtn" class="secondary-btn" style="display: none;">取消</button>
+        <button id="dialogCancelBtn" class="secondary-btn">取消</button>
       </div>
     </div>
   </dialog>
 
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <script src="renderer.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
 </body>
 </html>
