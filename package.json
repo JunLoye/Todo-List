@@ -1,0 +1,51 @@
+{
+  "name": "todo-list",
+  "version": "1.0.0",
+  "description": "A todo list desktop application built with Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "author": "Jun Loye",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.junloye.todolist",
+    "productName": "Todo List",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "portable": {
+      "artifactName": "TodoList.exe"
+    },
+    "compression": "maximum",
+    "asar": true,
+    "files": [
+      "!*.map",
+      "!node_modules/.cache",
+      "!node_modules/**/*.md",
+      "!node_modules/**/*.ts",
+      "!node_modules/**/test",
+      "!node_modules/**/tests",
+      "!node_modules/**/example",
+      "!node_modules/**/examples",
+      "!node_modules/**/LICENSE",
+      "!assets/icon.ico"
+    ],
+    "extraResources": []
+  }
+}
