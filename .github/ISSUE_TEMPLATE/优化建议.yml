@@ -1,0 +1,21 @@
+name: "优化建议"
+description: "对已有功能的小幅度优化或改进建议"
+labels: [优化, 新提交]
+
+body:
+- type: checkboxes
+  id: "yml-1"
+  attributes:
+    label: "检查项"
+    description: "请逐个检查下列项目，并勾选确认"
+    options:
+    - label: "我已在 [Issues 页面](https://github.com/JunLoye/Todo-List/issues)中搜索，确认了这一建议未被提交过"
+      required: true
+      
+- type: textarea
+  id: "yml-2"
+  attributes:
+    label: 描述
+    description: "详细描述具体需要优化哪些地方，要改成怎样的"
+  validations:
+    required: true

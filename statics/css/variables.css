@@ -29,7 +29,7 @@
   --toast-error-text: #c62828;
   --overdue-color: #d32f2f;
   --theme-btn-shadow: rgba(0,0,0,0.08);
-  --checkbox-completed-bg: #4caf50;  /* 新增：已完成复选框背景色 */
+  --checkbox-completed-bg: #4caf50;
 }
 
 [data-theme="dark"] {

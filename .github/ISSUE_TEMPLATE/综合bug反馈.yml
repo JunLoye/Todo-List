@@ -1,0 +1,55 @@
+name: "综合 Bug 反馈"
+description: "遇见了没有细分选项的其他 Bug"
+labels: [Bug, 新提交]
+
+body:
+- type: checkboxes
+  id: "yml-1"
+  attributes:
+    label: "检查项"
+    description: "请逐个检查下列项目，并勾选确认"
+    options:
+    - label: "我已在 [Issues 页面](https://github.com/JunLoye/Todo-List/issues)中搜索，确认了这一 Bug 未被提交过"
+      required: true
+
+- type: textarea
+  id: "yml-2"
+  attributes:
+    label: "描述"
+    description: "请描述该 Bug 的具体表现，包括错误信息、异常情况或截图"
+  validations:
+    required: true
+
+- type: textarea
+  id: "yml-3"
+  attributes:
+    label: "重现步骤"
+    description: "详细说明如何重现该问题，例如："
+    value: |
+      1. 打开 xxxx
+      2. 点击 xxxx
+      3. 往下滚动，然后点击 xxxx
+      4. 出现报错/异常
+  validations:
+    required: true
+
+- type: textarea
+  id: "yml-5"
+  attributes:
+    label: "日志与附件"
+    description: "上传可能的日志、截图或其他附件"
+    placeholder: "先点击这个文本框，然后将文件拖拽到文本框中以上传"
+  validations:
+    required: true
+
+- type: textarea
+  id: "yml-6"
+  attributes:
+    label: "其他信息"
+    description: "提供其他有助于解决问题的信息，例如："
+    value: |
+      - 操作系统: Windows xx / Linux / macOS
+      - Todo List 版本: Alpha / Beta / v-x.x.x
+      - 其他可能相关的信息
+  validations:
+    required: true

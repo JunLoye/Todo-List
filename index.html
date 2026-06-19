@@ -67,7 +67,6 @@
           </div>
 
           <div class="toolbar">
-            <!-- ★★★ 自定义排序下拉菜单：使用更完善的 SVG 图标 ★★★ -->
             <div class="custom-select" id="customSortSelect">
               <button class="select-trigger" id="sortTrigger" type="button">
                 <span id="sortSelectedText">
@@ -86,7 +85,6 @@
                 </svg>
               </button>
               <ul class="select-options" id="sortOptions" role="listbox">
-                <!-- 1. 创建时间 (新→旧) ：时钟 + 向下箭头 -->
                 <li data-value="create-desc" class="option-item active">
                   <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -98,7 +96,6 @@
                   </svg>
                   <span>创建时间 (新→旧)</span>
                 </li>
-                <!-- 2. 创建时间 (旧→新) ：时钟 + 向上箭头 -->
                 <li data-value="create-asc" class="option-item">
                   <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -110,7 +107,6 @@
                   </svg>
                   <span>创建时间 (旧→新)</span>
                 </li>
-                <!-- 3. 截止日期 (近→远) ：日历 + 向右箭头 -->
                 <li data-value="due-asc" class="option-item" id="sortDueAscOpt">
                   <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">

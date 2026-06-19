@@ -626,7 +626,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 编辑子任务（内联编辑）
     if (e.target.closest('.edit-subtask-btn')) {
       const subtaskItem = e.target.closest('.subtask-item');
       if (!subtaskItem) return;
@@ -638,7 +637,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const subtask = task.subtasks.find(st => st.id === subtaskId);
       if (!subtask) return;
 
-      // 如果有其他正在编辑的，先保存
       const existingInput = document.querySelector('.subtask-edit-input');
       if (existingInput) {
         const original = existingInput.dataset.originalText || '';
@@ -728,11 +726,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ----- 编辑模态框 -----
   saveEditBtn.addEventListener('click', saveEdit);
   closeModalBtn.addEventListener('click', () => editModal.close());
 
-  // ----- 视图切换（任务 / 设置）-----
   settingsBtn.addEventListener('click', () => {
     tasksView.classList.remove('active');
     settingsView.classList.add('active');
@@ -743,7 +739,6 @@ document.addEventListener('DOMContentLoaded', () => {
     tasksView.classList.add('active');
   });
 
-  // ----- 主题切换（圆形按钮）-----
   themeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const newTheme = btn.dataset.theme;
@@ -760,7 +755,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ----- 截止日期开关 -----
   dueDateEnableToggle.addEventListener('change', (e) => {
     APP_CONFIG.dueDateEnabled = e.target.checked;
     saveConfig();
@@ -769,7 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
     log(`截止日期功能: ${APP_CONFIG.dueDateEnabled ? '启用' : '禁用'}`);
   });
 
-  // ----- 调试模式开关 -----
   debugModeToggle.addEventListener('change', (e) => {
     APP_CONFIG.debugMode = e.target.checked;
     saveConfig();
@@ -782,7 +775,6 @@ document.addEventListener('DOMContentLoaded', () => {
     log(`调试模式: ${APP_CONFIG.debugMode ? '启用' : '禁用'}`);
   });
 
-  // ----- 日志级别选择 -----
   logLevelSelect?.addEventListener('change', async (e) => {
     const level = e.target.value;
     if (window.electronAPI && window.electronAPI.setLogLevel) {
