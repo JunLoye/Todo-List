@@ -91,9 +91,77 @@ select:focus {
 .toolbar {
 	display: flex;
 	justify-content: space-between;
-	align-items: center;
+	align-items: flex-start;
 	margin-bottom: 16px;
 	gap: 12px;
+}
+
+.toolbar-left {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+}
+
+.search-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex: 1 1 320px;
+}
+
+.search-wrapper input {
+	flex: 1;
+}
+
+#clearSearchBtn {
+	width: 32px;
+	height: 32px;
+	font-size: 1rem;
+	line-height: 1;
+	padding: 0;
+	border-radius: 10px;
+}
+
+.tag-filter-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 16px;
+}
+
+.tag-filter-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.tag-filter-empty {
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+}
+
+.tag-filter-chip {
+	border: 1px solid var(--border-color);
+	background: var(--card-bg);
+	color: var(--text-primary);
+	padding: 6px 12px;
+	border-radius: 999px;
+	font-size: 0.85rem;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.tag-filter-chip:hover {
+	background: var(--btn-secondary-hover-bg);
+}
+
+.tag-filter-chip.active {
+	background: var(--filter-active-bg);
+	color: var(--filter-active-color);
+	border-color: transparent;
 }
 
 .custom-select {
@@ -468,13 +536,12 @@ select:focus {
 	color: var(--text-primary);
 }
 
-/* 自定义日期选择器样式 */
 .date-picker-wrapper {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
-	flex-wrap: nowrap;                     /* 强制不换行 */
-	flex-shrink: 0;                         /* 防止整体被压缩 */
+	flex-wrap: nowrap;
+	flex-shrink: 0;
 	min-width: 220px;
 	width: 220px;
 	max-width: 280px;
@@ -490,17 +557,19 @@ select:focus {
 }
 
 .date-picker-wrapper input {
-	flex: 1 1 0;                                /* 允许收缩至0，等分剩余空间 */
-	width: 0;                                     /* 基础宽度为0，由flex控制 */
+	flex: 1 1 auto;
+	width: 100%;
 	min-width: 0;
 	border: none;
 	background: transparent;
-	padding: 0 12px;
+	padding: 0 12px 0 12px;
+	padding-right: 56px;
 	color: var(--text-primary);
 	font-size: 0.95rem;
 	outline: none;
 	height: 100%;
 	display: block;
+	box-sizing: border-box;
 }
 
 .date-picker-wrapper input::placeholder {
@@ -509,11 +578,12 @@ select:focus {
 }
 
 .date-picker-wrapper .icon-btn {
-	flex: 0 0 auto;                         /* 固定宽度，不伸缩 */
+	position: absolute;
+	top: 50%;
+	right: 0;
+	transform: translateY(-50%);
 	width: 44px;
 	height: 44px;
-	flex-shrink: 0;
-	margin-right: 0;
 	color: var(--text-secondary);
 	border-radius: 0 12px 12px 0;
 	display: flex;

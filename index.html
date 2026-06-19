@@ -21,6 +21,13 @@
     </header>
     <div class="main-container">
       <aside class="sidebar">
+        <div class="search-wrapper sidebar-search">
+          <input type="text" id="searchInput" placeholder="搜索任务或标签..." />
+          <button type="button" id="clearSearchBtn" class="icon-btn" title="清除搜索">×</button>
+        </div>
+        <div class="tag-filter-bar sidebar-tag-filter">
+          <div class="tag-filter-list" id="tagFilterList"></div>
+        </div>
         <div class="filter-group">
           <button data-filter="all" class="filter-btn active">
             全部 <span class="filter-count" id="totalCount">0</span>
@@ -90,46 +97,48 @@
           </div>
 
           <div class="toolbar">
-            <div class="custom-select" id="customSortSelect">
-              <button class="select-trigger" id="sortTrigger" type="button">
-                <span id="sortSelectedText">
-                  <svg class="selected-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <polyline points="6 13 12 19 18 13"/>
+            <div class="toolbar-left">
+              <div class="custom-select" id="customSortSelect">
+                <button class="select-trigger" id="sortTrigger" type="button">
+                  <span id="sortSelectedText">
+                    <svg class="selected-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <polyline points="6 13 12 19 18 13"/>
+                    </svg>
+                    创建时间
+                  </span>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="2 4 6 8 10 4"/>
                   </svg>
-                  创建时间
-                </span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="2 4 6 8 10 4"/>
-                </svg>
-              </button>
-              <ul class="select-options" id="sortOptions" role="listbox">
-                <li data-value="create-desc" class="option-item active">
-                  <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <polyline points="6 13 12 19 18 13"/>
-                  </svg>
-                  <span>创建时间</span>
-                </li>
-                <li data-value="create-asc" class="option-item">
-                  <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="19" x2="12" y2="5"/>
-                    <polyline points="6 11 12 5 18 11"/>
-                  </svg>
-                  <span>创建时间</span>
-                </li>
-                <li data-value="due-asc" class="option-item" id="sortDueAscOpt">
-                  <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="19" x2="12" y2="5"/>
-                    <polyline points="6 11 12 5 18 11"/>
-                  </svg>
-                  <span>截止日期</span>
-                </li>
-              </ul>
+                </button>
+                <ul class="select-options" id="sortOptions" role="listbox">
+                  <li data-value="create-desc" class="option-item active">
+                    <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <polyline points="6 13 12 19 18 13"/>
+                    </svg>
+                    <span>创建时间</span>
+                  </li>
+                  <li data-value="create-asc" class="option-item">
+                    <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="19" x2="12" y2="5"/>
+                      <polyline points="6 11 12 5 18 11"/>
+                    </svg>
+                    <span>创建时间</span>
+                  </li>
+                  <li data-value="due-asc" class="option-item" id="sortDueAscOpt">
+                    <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="19" x2="12" y2="5"/>
+                      <polyline points="6 11 12 5 18 11"/>
+                    </svg>
+                    <span>截止日期</span>
+                  </li>
+                </ul>
+              </div>
             </div>
             <button id="clearCompletedBtn" class="secondary-btn">清除已完成</button>
           </div>

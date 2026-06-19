@@ -7,6 +7,24 @@
     flex-direction: column;
     gap: 24px;
   }
+
+  .sidebar .search-wrapper {
+    flex: none;
+    width: 100%;
+  }
+
+  .sidebar .search-wrapper input {
+    width: 100%;
+  }
+
+  .sidebar .tag-filter-bar {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .sidebar .tag-filter-bar .tag-filter-list {
+    width: 100%;
+  }
   
   .stats {
     display: flex;

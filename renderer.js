@@ -29,6 +29,9 @@ const dueDateContainer = document.getElementById('dueDatePicker');
 
 const taskTagsInput = document.getElementById('taskTagsInput');
 const taskSubtasksInput = document.getElementById('taskSubtasksInput');
+const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearchBtn');
+const tagFilterList = document.getElementById('tagFilterList');
 
 const sortTrigger = document.getElementById('sortTrigger');
 const sortOptions = document.getElementById('sortOptions');
@@ -53,6 +56,8 @@ const VERSION = '1.3.0';
 let tasks = [];
 let currentFilter = 'all';
 let currentSort = 'create-desc';
+let currentSearch = '';
+let activeTagFilter = '';
 let editingTaskId = null;
 let expandedTaskIds = new Set();
 
@@ -414,9 +419,22 @@ function render() {
   let filtered = [...tasks];
 
   if (currentFilter === 'active') {
-    filtered = tasks.filter(t => !t.completed);
+    filtered = filtered.filter(t => !t.completed);
   } else if (currentFilter === 'completed') {
-    filtered = tasks.filter(t => t.completed);
+    filtered = filtered.filter(t => t.completed);
+  }
+
+  if (currentSearch) {
+    const query = currentSearch.trim().toLowerCase();
+    filtered = filtered.filter(t => {
+      const titleMatch = t.title.toLowerCase().includes(query);
+      const tagsMatch = (t.tags || []).some(tag => tag.toLowerCase().includes(query));
+      return titleMatch || tagsMatch;
+    });
+  }
+
+  if (activeTagFilter) {
+    filtered = filtered.filter(t => (t.tags || []).some(tag => tag.toLowerCase() === activeTagFilter.toLowerCase()));
   }
 
   filtered.sort((a, b) => {
@@ -546,6 +564,56 @@ function render() {
   totalSpan.textContent = total;
   activeSpan.textContent = total - completed;
   completedSpan.textContent = completed;
+
+  renderTagFilterList();
+}
+
+function getAllTags() {
+  const tagSet = new Set();
+  tasks.forEach(task => {
+    (task.tags || []).forEach(tag => {
+      const normalized = tag.trim();
+      if (normalized) tagSet.add(normalized);
+    });
+  });
+  return Array.from(tagSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN', { sensitivity: 'base' }));
+}
+
+function renderTagFilterList() {
+  if (!tagFilterList) return;
+  const tags = getAllTags();
+  tagFilterList.innerHTML = '';
+
+  if (tags.length === 0) {
+    tagFilterList.innerHTML = '<span class="tag-filter-empty">暂无标签</span>';
+    return;
+  }
+
+  tags.forEach(tag => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `tag-filter-chip${activeTagFilter.toLowerCase() === tag.toLowerCase() ? ' active' : ''}`;
+    button.textContent = tag;
+    button.addEventListener('click', () => {
+      if (activeTagFilter.toLowerCase() === tag.toLowerCase()) {
+        activeTagFilter = '';
+      } else {
+        activeTagFilter = tag;
+      }
+      render();
+    });
+    tagFilterList.appendChild(button);
+  });
+}
+
+function setActiveTagFilter(tag) {
+  activeTagFilter = tag || '';
+  render();
+}
+
+function clearTagFilter() {
+  activeTagFilter = '';
+  render();
 }
 
 function updateSortDisplay(value) {
@@ -796,7 +864,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   addBtn.addEventListener('click', addTask);
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
-  
+
+  searchInput?.addEventListener('input', (e) => {
+    currentSearch = e.target.value || '';
+    render();
+  });
+
+  clearSearchBtn?.addEventListener('click', () => {
+    if (searchInput) {
+      searchInput.value = '';
+      currentSearch = '';
+      render();
+    }
+  });
+
   clearCompletedBtn.addEventListener('click', clearCompleted);
 
   exportBtn?.addEventListener('click', exportData);
@@ -807,6 +888,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = e.target.closest('.todo-item');
     if (!item) return;
     const id = item.getAttribute('data-id');
+
+    const clickedTag = e.target.closest('.tag');
+    if (clickedTag) {
+      const tagText = clickedTag.textContent.trim();
+      if (tagText) {
+        activeTagFilter = tagText;
+        if (searchInput) {
+          searchInput.value = '';
+          currentSearch = '';
+        }
+        render();
+      }
+      return;
+    }
 
     if (e.target.closest('.edit-btn')) {
       const task = tasks.find(t => t.id === id);
@@ -959,15 +1054,12 @@ document.addEventListener('DOMContentLoaded', () => {
   saveEditBtn.addEventListener('click', saveEdit);
   closeModalBtn.addEventListener('click', () => editModal.close());
 
-  // --- 修改点 1：设置按钮切换行为 ---
   settingsBtn.addEventListener('click', () => {
     if (settingsView.classList.contains('active')) {
-      // 如果当前在设置页，则关闭
       settingsView.classList.remove('active');
       tasksView.classList.add('active');
       log('通过点击设置按钮关闭设置面板');
     } else {
-      // 否则打开设置页
       tasksView.classList.remove('active');
       settingsView.classList.add('active');
       log('打开设置面板');
@@ -979,22 +1071,18 @@ document.addEventListener('DOMContentLoaded', () => {
     tasksView.classList.add('active');
   });
 
-  // --- 修改点 2：全局 ESC 键监听，关闭设置页（优先关闭打开的对话框）---
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      // 如果编辑模态框打开，关闭它
       if (editModal.open) {
         editModal.close();
         e.preventDefault();
         return;
       }
-      // 如果自定义对话框打开，关闭它
       if (customDialog.open) {
         customDialog.close();
         e.preventDefault();
         return;
       }
-      // 如果设置面板可见，关闭它
       if (settingsView.classList.contains('active')) {
         settingsView.classList.remove('active');
         tasksView.classList.add('active');
