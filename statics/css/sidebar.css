@@ -85,3 +85,23 @@
   .settings-entry-btn:hover {
     background: var(--btn-secondary-hover-bg);
   }
+
+  .filter-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .filter-count {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    padding: 0 8px;
+    border-radius: 6px;
+    min-width: 20px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .filter-btn.active .filter-count {
+    background: var(--filter-active-color);
+    color: var(--filter-active-bg);
+  }

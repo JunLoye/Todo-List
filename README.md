@@ -6,6 +6,7 @@
 [![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/JunLoye/Todo-List)](https://github.com/JunLoye/Todo-List/issues)
 [![GitHub 下载](https://img.shields.io/github/downloads/junloye/Todo-List/total?style=flat-square&logo=github&label=下载)](https://github.com/junloye/Todo-List/releases)
 [![GitHub 仓库](https://img.shields.io/badge/GitHub-junloye%2FTodo--List-181717?style=flat-square&logo=github)](https://github.com/junloye/Todo-List)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/JunLoye/Todo-List)
 
 一个基于 Electron 的轻量级待办事项管理工具，支持任务增删改查、截止日期、深色模式等功能。
 

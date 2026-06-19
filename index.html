@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net">
   <title>Todo List</title>
-
   <link rel="stylesheet" href="statics/css/variables.css">
   <link rel="stylesheet" href="statics/css/base.css">
   <link rel="stylesheet" href="statics/css/sidebar.css">
@@ -15,41 +13,27 @@
   <link rel="stylesheet" href="statics/css/components.css">
   <link rel="stylesheet" href="statics/css/settings.css">
 </head>
-
 <body>
   <div class="app">
-    <header class="app-header">
-      <h1>Todo List</h1>
-    </header>
-
+    <header class="app-header"><h1>Todo List</h1></header>
     <div class="main-container">
       <aside class="sidebar">
-        <div class="stats">
-          <div class="stat-card">
-            <span class="stat-label">全部</span>
-            <span class="stat-value" id="totalCount">0</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">进行中</span>
-            <span class="stat-value" id="activeCount">0</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">已完成</span>
-            <span class="stat-value" id="completedCount">0</span>
-          </div>
-        </div>
-
+        <!-- 统计卡片已移除，整合到筛选按钮中 -->
         <div class="filter-group">
-          <button data-filter="all" class="filter-btn active">全部</button>
-          <button data-filter="active" class="filter-btn">进行中</button>
-          <button data-filter="completed" class="filter-btn">已完成</button>
+          <button data-filter="all" class="filter-btn active">
+            全部 <span class="filter-count" id="totalCount">0</span>
+          </button>
+          <button data-filter="active" class="filter-btn">
+            进行中 <span class="filter-count" id="activeCount">0</span>
+          </button>
+          <button data-filter="completed" class="filter-btn">
+            已完成 <span class="filter-count" id="completedCount">0</span>
+          </button>
         </div>
-
         <div class="sidebar-footer">
           <button id="settingsBtn" class="settings-entry-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path
-                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
             设置
