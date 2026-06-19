@@ -1,6 +1,5 @@
 const todoListEl = document.getElementById('todoList');
 const taskInput = document.getElementById('taskInput');
-const dueDateInput = document.getElementById('dueDateInput');
 const addBtn = document.getElementById('addBtn');
 const clearCompletedBtn = document.getElementById('clearCompletedBtn');
 const filterBtns = document.querySelectorAll('.filter-btn');
@@ -14,7 +13,6 @@ const tasksView = document.getElementById('tasksView');
 const settingsView = document.getElementById('settingsView');
 const closeSettingsViewBtn = document.getElementById('closeSettingsViewBtn');
 
-const themePicker = document.getElementById('themePicker');
 const themeBtns = document.querySelectorAll('.theme-btn');
 const dueDateEnableToggle = document.getElementById('dueDateEnableToggle');
 const debugModeToggle = document.getElementById('debugModeToggle');
@@ -27,7 +25,7 @@ const checkUpdateBtn = document.getElementById('checkUpdateBtn');
 const openGithubBtn = document.getElementById('openGithubBtn');
 const settingsVersionSpan = document.getElementById('settingsVersionSpan');
 const updateStatusText = document.getElementById('updateStatusText');
-const dueDateContainer = document.getElementById('dueDateContainer');
+const dueDateContainer = document.getElementById('dueDatePicker');
 
 const taskTagsInput = document.getElementById('taskTagsInput');
 const taskSubtasksInput = document.getElementById('taskSubtasksInput');
@@ -40,7 +38,6 @@ const sortDueAscOpt = document.getElementById('sortDueAscOpt');
 
 const editModal = document.getElementById('editModal');
 const editTitle = document.getElementById('editTitle');
-const editDueDate = document.getElementById('editDueDate');
 const editTags = document.getElementById('editTags');
 const saveEditBtn = document.getElementById('saveEditBtn');
 const closeModalBtn = document.getElementById('closeModalBtn');
@@ -65,6 +62,230 @@ const APP_CONFIG = {
   debugMode: false
 };
 
+// ==================== 日期选择器组件 ====================
+function createDatePicker({
+  displayInput,
+  toggleBtn,
+  popup,
+  hiddenInput,
+  onSelect
+}) {
+  let selectedDate = null; // Date 对象
+  let viewDate = new Date();
+  viewDate.setHours(0, 0, 0, 0);
+
+  function formatDate(date) {
+    if (!date) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function parseDateInput(value) {
+    if (!value) return null;
+    const normalized = value.trim().replace(/\//g, '-');
+    let parts;
+    if (/^\d{8}$/.test(normalized)) {
+      parts = [normalized.slice(0, 4), normalized.slice(4, 6), normalized.slice(6, 8)];
+    } else {
+      parts = normalized.split('-');
+    }
+    if (parts.length !== 3) return null;
+    const [yearStr, monthStr, dayStr] = parts;
+    if (!/^\d{4}$/.test(yearStr) || !/^\d{1,2}$/.test(monthStr) || !/^\d{1,2}$/.test(dayStr)) {
+      return null;
+    }
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10) - 1;
+    const day = parseInt(dayStr, 10);
+    const d = new Date(year, month, day);
+    if (isNaN(d.getTime())) return null;
+    if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day) return null;
+    return d;
+  }
+
+  function renderCalendar() {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const titleEl = popup.querySelector('.calendar-title');
+    titleEl.textContent = `${year}年${month+1}月`;
+
+    const daysContainer = popup.querySelector('.calendar-days');
+    daysContainer.innerHTML = '';
+
+    // 上月填充
+    const prevMonthDays = new Date(year, month, 0).getDate();
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const day = prevMonthDays - i;
+      const cell = document.createElement('div');
+      cell.className = 'calendar-day other-month';
+      cell.textContent = day;
+      daysContainer.appendChild(cell);
+    }
+
+    // 本月天数
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'calendar-day';
+      cell.textContent = d;
+      const dateObj = new Date(year, month, d);
+      if (selectedDate && dateObj.getTime() === selectedDate.getTime()) {
+        cell.classList.add('selected');
+      }
+      if (dateObj.getTime() === today.getTime()) {
+        cell.classList.add('today');
+      }
+      cell.dataset.date = formatDate(dateObj);
+      cell.addEventListener('click', () => {
+        selectedDate = new Date(year, month, d);
+        const dateStr = formatDate(selectedDate);
+        displayInput.value = dateStr;
+        if (hiddenInput) hiddenInput.value = dateStr;
+        if (onSelect) onSelect(dateStr);
+        closePopup();
+        renderCalendar();
+      });
+      daysContainer.appendChild(cell);
+    }
+
+    // 下月填充
+    const totalCells = firstDay + daysInMonth;
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'calendar-day other-month';
+      cell.textContent = d;
+      daysContainer.appendChild(cell);
+    }
+  }
+
+  function openPopup() {
+    if (selectedDate) {
+      viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    } else {
+      viewDate = new Date();
+      viewDate.setDate(1);
+    }
+    renderCalendar();
+    popup.style.display = 'block';
+  }
+
+  displayInput.addEventListener('blur', () => {
+    const value = displayInput.value.trim();
+    if (!value) {
+      selectedDate = null;
+      if (hiddenInput) hiddenInput.value = '';
+      if (onSelect) onSelect('');
+      renderCalendar();
+      return;
+    }
+
+    const parsed = parseDateInput(value);
+    if (parsed) {
+      selectedDate = parsed;
+      const dateStr = formatDate(parsed);
+      displayInput.value = dateStr;
+      if (hiddenInput) hiddenInput.value = dateStr;
+      if (onSelect) onSelect(dateStr);
+      viewDate = new Date(parsed.getFullYear(), parsed.getMonth(), 1);
+      renderCalendar();
+      return;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast('请输入合法日期，格式为 YYYY-MM-DD', 'error');
+    }
+    selectedDate = null;
+    if (hiddenInput) hiddenInput.value = '';
+    renderCalendar();
+  });
+
+  function closePopup() {
+    popup.style.display = 'none';
+  }
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popup.style.display === 'block') {
+      closePopup();
+    } else {
+      openPopup();
+    }
+  });
+
+  popup.querySelectorAll('.calendar-nav').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dir = parseInt(btn.dataset.dir);
+      viewDate.setMonth(viewDate.getMonth() + dir);
+      renderCalendar();
+    });
+  });
+
+  const clearBtn = popup.querySelector('.calendar-footer .secondary-btn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectedDate = null;
+      displayInput.value = '';
+      if (hiddenInput) hiddenInput.value = '';
+      if (onSelect) onSelect('');
+      closePopup();
+      renderCalendar();
+    });
+  }
+
+  const todayBtn = popup.querySelector('.calendar-footer .primary-btn');
+  if (todayBtn) {
+    todayBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      selectedDate = now;
+      const dateStr = formatDate(now);
+      displayInput.value = dateStr;
+      if (hiddenInput) hiddenInput.value = dateStr;
+      if (onSelect) onSelect(dateStr);
+      closePopup();
+      renderCalendar();
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    const wrapper = displayInput.closest('.date-picker-wrapper');
+    if (!wrapper.contains(e.target)) {
+      closePopup();
+    }
+  });
+
+  function setDate(dateStr) {
+    if (dateStr) {
+      const parsed = parseDateInput(dateStr);
+      if (parsed) {
+        selectedDate = parsed;
+        const normalized = formatDate(parsed);
+        displayInput.value = normalized;
+        if (hiddenInput) hiddenInput.value = normalized;
+        viewDate = new Date(parsed.getFullYear(), parsed.getMonth(), 1);
+        return;
+      }
+    }
+    selectedDate = null;
+    displayInput.value = '';
+    if (hiddenInput) hiddenInput.value = '';
+  }
+
+  renderCalendar();
+  return { setDate, getDate: () => selectedDate, closePopup };
+}
+
+// ==================== 主逻辑 ====================
 function log(message, level = 'info') {
   if (window.electronAPI && window.electronAPI.log) {
     window.electronAPI.log(message, level);
@@ -136,32 +357,27 @@ function saveConfig() {
 }
 
 function applyDueDateFeatureState() {
-  if (APP_CONFIG.dueDateEnabled) {
-    dueDateContainer.style.display = 'inline-block';
-    if (sortDueAscOpt) sortDueAscOpt.style.display = 'block';
-    editDueDate.style.display = 'block';
-  } else {
-    dueDateContainer.style.display = 'none';
-    if (sortDueAscOpt) sortDueAscOpt.style.display = 'none';
-    editDueDate.style.display = 'none';
-    if (currentSort === 'due-asc') {
-      const firstOption = sortOptions.querySelector('.option-item');
-      if (firstOption) {
-        firstOption.click();
-      }
-    }
+  const isEnabled = APP_CONFIG.dueDateEnabled;
+  dueDateContainer.style.display = isEnabled ? 'inline-block' : 'none';
+  if (sortDueAscOpt) sortDueAscOpt.style.display = isEnabled ? 'block' : 'none';
+  // 编辑模态框中的日期选择器隐藏
+  const editPickerWrapper = document.getElementById('editDueDatePicker');
+  if (editPickerWrapper) {
+    editPickerWrapper.style.display = isEnabled ? 'flex' : 'none';
+  }
+
+  if (!isEnabled && currentSort === 'due-asc') {
+    handleSortChange('create-desc');
   }
 }
 
 function showToast(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  
   let icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
   if (type === 'error') {
     icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
   }
-  
   toast.innerHTML = `${icon}<span>${message}</span>`;
   toastContainer.appendChild(toast);
   setTimeout(() => {
@@ -185,14 +401,8 @@ function showConfirmDialog(message, type = 'warning') {
       dialogConfirmBtn.style.background = 'var(--btn-primary-bg)';
     }
 
-    const onConfirm = () => {
-      cleanup();
-      resolve(true);
-    };
-    const onCancel = () => {
-      cleanup();
-      resolve(false);
-    };
+    const onConfirm = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
     const cleanup = () => {
       dialogConfirmBtn.removeEventListener('click', onConfirm);
       dialogCancelBtn.removeEventListener('click', onCancel);
@@ -206,7 +416,6 @@ function showConfirmDialog(message, type = 'warning') {
 }
 
 function render() {
-  const todayStr = new Date().toISOString().split('T')[0];
   todoListEl.innerHTML = '';
   let filtered = [...tasks];
 
@@ -395,10 +604,11 @@ function initCustomSelect() {
   });
 }
 
+// ----- 任务操作 -----
 async function addTask() {
   const title = taskInput.value.trim();
   if (!title) return;
-  const dueDate = APP_CONFIG.dueDateEnabled ? dueDateInput.value : '';
+  const dueDate = APP_CONFIG.dueDateEnabled ? document.getElementById('dueDateInput').value : '';
 
   const tagsRaw = taskTagsInput.value.trim();
   const tags = tagsRaw ? tagsRaw.split(/[，,]\s*/).filter(s => s !== '') : [];
@@ -423,7 +633,8 @@ async function addTask() {
 
   tasks.push(newTask);
   taskInput.value = '';
-  dueDateInput.value = '';
+  // 清空日期选择器
+  mainDatePicker.setDate('');
   taskTagsInput.value = '';
   taskSubtasksInput.value = '';
   await window.electronAPI.saveTodos(tasks);
@@ -457,7 +668,7 @@ async function toggleComplete(id, completed) {
 function openEditModal(task) {
   editingTaskId = task.id;
   editTitle.value = task.title;
-  editDueDate.value = task.dueDate || '';
+  editDatePicker.setDate(task.dueDate || '');
   editTags.value = (task.tags || []).join(', ');
   editModal.showModal();
 }
@@ -466,13 +677,14 @@ async function saveEdit() {
   const title = editTitle.value.trim();
   if (!title) return;
   const tags = editTags.value.split(/[，,]\s*/).filter(s => s !== '');
+  const dueDate = document.getElementById('editDueDate').value; // 隐藏 input
 
   const task = tasks.find(t => t.id === editingTaskId);
   if (task) {
     task.title = title;
     task.tags = tags;
     if (APP_CONFIG.dueDateEnabled) {
-      task.dueDate = editDueDate.value;
+      task.dueDate = dueDate;
     }
     await window.electronAPI.saveTodos(tasks);
     render();
@@ -553,20 +765,58 @@ function styleSpin() {
   }
 }
 
+// ==================== DOM 初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
-  // ----- 初始化 -----
+  // ----- 初始化日期选择器 -----
+  // 主界面日期选择器
+  const dueDateDisplay = document.getElementById('dueDateDisplay');
+  const dueDateToggle = document.getElementById('dueDateToggleBtn');
+  const dueDatePopup = document.getElementById('calendarPopup');
+  const dueDateHidden = document.createElement('input');
+  dueDateHidden.type = 'hidden';
+  dueDateHidden.id = 'dueDateInput';
+  dueDateDisplay.parentNode.appendChild(dueDateHidden);
+  window.mainDatePicker = createDatePicker({
+    displayInput: dueDateDisplay,
+    toggleBtn: dueDateToggle,
+    popup: dueDatePopup,
+    hiddenInput: dueDateHidden,
+    onSelect: (dateStr) => {}
+  });
+
+  // 编辑模态框日期选择器
+  const editDueDateDisplay = document.getElementById('editDueDateDisplay');
+  const editDueDateToggle = document.querySelector('#editDueDatePicker .edit-date-toggle');
+  const editDueDatePopup = document.getElementById('editCalendarPopup');
+  const editDueDateHidden = document.createElement('input');
+  editDueDateHidden.type = 'hidden';
+  editDueDateHidden.id = 'editDueDate';
+  editDueDateDisplay.parentNode.appendChild(editDueDateHidden);
+  window.editDatePicker = createDatePicker({
+    displayInput: editDueDateDisplay,
+    toggleBtn: editDueDateToggle,
+    popup: editDueDatePopup,
+    hiddenInput: editDueDateHidden,
+    onSelect: (dateStr) => {}
+  });
+
+  // 应用截止日期启用状态（隐藏/显示）
+  const dueDateContainer = document.getElementById('dueDatePicker');
+  window.dueDateContainer = dueDateContainer;
+
+  // ----- 初始化应用 -----
   init();
   initCustomSelect();
 
   // ----- 添加任务 -----
   addBtn.addEventListener('click', addTask);
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
-  if (dueDateInput) dueDateInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
+  // 日期选择器不响应回车，由按钮统一处理
 
   // ----- 清除已完成 -----
   clearCompletedBtn.addEventListener('click', clearCompleted);
 
-  // ----- 导出（原 exportBtn 已在 HTML 中移除，保留以防万一）-----
+  // ----- 导出 -----
   exportBtn?.addEventListener('click', exportData);
 
   // ----- 筛选 -----
@@ -885,7 +1135,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('检查更新失败:', error);
       let errorMsg = '网络请求失败';
-      
       if (error.message) {
         if (error.message.includes('请求限制') || error.message.includes('速率限制')) {
           errorMsg = error.message;
@@ -897,7 +1146,6 @@ document.addEventListener('DOMContentLoaded', () => {
           errorMsg = error.message;
         }
       }
-
       updateStatusText.innerHTML = errorMsg;
       updateStatusText.style.color = '#e57373';
       showToast(errorMsg, 'error');
