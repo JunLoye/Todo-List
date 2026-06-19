@@ -17,6 +17,8 @@ const closeSettingsViewBtn = document.getElementById('closeSettingsViewBtn');
 
 const darkModeToggle = document.getElementById('darkModeToggle');
 const dueDateEnableToggle = document.getElementById('dueDateEnableToggle');
+const debugModeToggle = document.getElementById('debugModeToggle');
+const logLevelSelect = document.getElementById('logLevelSelect');
 const importDataBtn = document.getElementById('importDataBtn');
 const exportDataBtn = document.getElementById('exportDataBtn');
 const deleteAllDataBtn = document.getElementById('deleteAllDataBtn');
@@ -49,14 +51,44 @@ let editingTaskId = null;
 
 const APP_CONFIG = {
   theme: 'light',
-  dueDateEnabled: true
+  dueDateEnabled: true,
+  debugMode: false
 };
+
+function log(message, level = 'info') {
+  if (window.electronAPI && window.electronAPI.log) {
+    window.electronAPI.log(message, level);
+  } else {
+    console.log(`[${level}]`, message);
+  }
+}
 
 async function init() {
   settingsVersionSpan.textContent = VERSION;
+
+  try {
+    const config = await window.electronAPI.configGet();
+    const debugFromMain = config.debugEnabled;
+    localStorage.setItem('todo_debug_mode', String(debugFromMain));
+    APP_CONFIG.debugMode = debugFromMain;
+    debugModeToggle.checked = debugFromMain;
+
+    const level = config.logLevel || 'info';
+    if (logLevelSelect) {
+      logLevelSelect.value = level;
+    }
+    // 若主进程 debug 已开启，确保渲染端状态一致
+    if (debugFromMain && window.electronAPI.setDebugMode) {
+      window.electronAPI.setDebugMode(true);
+    }
+  } catch (e) {
+    console.warn('读取主进程配置失败，使用 localStorage 默认值', e);
+  }
+
   loadConfig();
   tasks = await window.electronAPI.loadTodos();
   render();
+  log('应用初始化完成');
 }
 
 function loadConfig() {
@@ -95,6 +127,7 @@ function applyDueDateFeatureState() {
 function saveConfig() {
   localStorage.setItem('todo_theme', APP_CONFIG.theme);
   localStorage.setItem('todo_due_enabled', APP_CONFIG.dueDateEnabled);
+  localStorage.setItem('todo_debug_mode', APP_CONFIG.debugMode);
 }
 
 function showToast(message, type = 'success') {
@@ -246,6 +279,7 @@ async function addTask() {
   await window.electronAPI.saveTodos(tasks);
   render();
   showToast('任务已成功添加');
+  log(`添加任务: ${title}`);
 }
 
 async function deleteTask(id) {
@@ -253,6 +287,7 @@ async function deleteTask(id) {
   await window.electronAPI.saveTodos(tasks);
   render();
   showToast('任务已成功删除');
+  log(`删除任务: ${id}`);
 }
 
 async function toggleComplete(id, completed) {
@@ -264,6 +299,7 @@ async function toggleComplete(id, completed) {
     if (completed) {
       confetti({ particleCount: 60, spread: 50, origin: { y: 0.85 } });
     }
+    log(`任务 ${id} 完成状态: ${completed}`);
   }
 }
 
@@ -288,6 +324,7 @@ async function saveEdit() {
     render();
     editModal.close();
     showToast('任务更新成功');
+    log(`编辑任务: ${editingTaskId} -> ${title}`);
   }
 }
 
@@ -303,6 +340,7 @@ async function clearCompleted() {
     await window.electronAPI.saveTodos(tasks);
     render();
     showToast('已完成任务清理完毕');
+    log(`清理已完成任务，共 ${completedCount} 项`);
   }
 }
 
@@ -325,7 +363,12 @@ function onSortChange(e) {
 
 async function exportData() {
   const res = await window.electronAPI.exportTodos(tasks);
-  if (res.success) showToast('数据导出成功');
+  if (res.success) {
+    showToast('数据导出成功');
+    log('导出数据成功');
+  } else {
+    log('导出数据取消或失败');
+  }
 }
 
 async function importData() {
@@ -335,12 +378,16 @@ async function importData() {
     await window.electronAPI.saveTodos(tasks);
     render();
     showToast('外部数据导入成功');
+    log(`导入数据，共 ${tasks.length} 项`);
   } else if (res.error) {
     showToast(res.error, 'error');
+    log(`导入失败: ${res.error}`, 'error');
+  } else if (!res.success) {
+    showToast('导入取消', 'error');
+    log('导入取消');
   }
 }
 
-// 添加旋转动画样式（仅执行一次）
 function styleSpin() {
   if (!document.getElementById('spinStyle')) {
     const style = document.createElement('style');
@@ -383,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
   settingsBtn.addEventListener('click', () => {
     tasksView.classList.remove('active');
     settingsView.classList.add('active');
+    log('打开设置面板');
   });
   closeSettingsViewBtn.addEventListener('click', () => {
     settingsView.classList.remove('active');
@@ -398,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
       APP_CONFIG.theme = 'light';
     }
     saveConfig();
+    log(`切换主题: ${APP_CONFIG.theme}`);
   });
 
   dueDateEnableToggle.addEventListener('change', (e) => {
@@ -405,6 +454,34 @@ document.addEventListener('DOMContentLoaded', () => {
     saveConfig();
     applyDueDateFeatureState();
     render();
+    log(`截止日期功能: ${APP_CONFIG.dueDateEnabled ? '启用' : '禁用'}`);
+  });
+
+  // 原有代码片段（在 DOMContentLoaded 中）
+  debugModeToggle.addEventListener('change', (e) => {
+    APP_CONFIG.debugMode = e.target.checked;
+    saveConfig();
+    // 通知主进程更新调试状态
+    if (window.electronAPI && window.electronAPI.setDebugMode) {
+      window.electronAPI.setDebugMode(APP_CONFIG.debugMode);
+    }
+    if (window.electronAPI && window.electronAPI.toggleDevTools) {
+      window.electronAPI.toggleDevTools(APP_CONFIG.debugMode);
+    }
+    log(`调试模式: ${APP_CONFIG.debugMode ? '启用' : '禁用'}`);
+  });
+
+  logLevelSelect?.addEventListener('change', async (e) => {
+    const level = e.target.value;
+    if (window.electronAPI && window.electronAPI.setLogLevel) {
+      const result = await window.electronAPI.setLogLevel(level);
+      if (result.success) {
+        showToast(`日志级别已切换为 ${level}`);
+        log(`日志级别切换为 ${level}`);
+      } else {
+        showToast(result.error || '设置失败', 'error');
+      }
+    }
   });
 
   importDataBtn.addEventListener('click', importData);
@@ -417,6 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await window.electronAPI.saveTodos(tasks);
       render();
       showToast('所有本地存储已被重置清空', 'error');
+      log('清空全部数据');
     }
   });
 
@@ -425,9 +503,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm) {
       localStorage.removeItem('todo_theme');
       localStorage.removeItem('todo_due_enabled');
+      localStorage.removeItem('todo_debug_mode');
       loadConfig();
       render();
       showToast('设置偏好已恢复默认');
+      log('重置设置');
     }
   });
 
@@ -436,16 +516,22 @@ document.addEventListener('DOMContentLoaded', () => {
       openGithubBtn.disabled = true;
       showToast('正在打开 GitHub...');
       await window.electronAPI.openUrl('https://github.com/junloye/Todo-List');
+      log('打开 GitHub 页面');
     } catch (error) {
       console.error('打开 GitHub 失败:', error);
       showToast('无法打开 GitHub，请检查网络连接', 'error');
+      log(`打开 GitHub 失败: ${error.message}`, 'error');
     } finally {
       openGithubBtn.disabled = false;
     }
   });
 
-  // 修复后的检查更新逻辑
+  let updating = false;
   checkUpdateBtn.addEventListener('click', async () => {
+    if (updating) return;
+    updating = true;
+    checkUpdateBtn.disabled = true;
+
     updateStatusText.innerHTML = `
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
@@ -454,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     updateStatusText.style.color = 'var(--text-secondary)';
 
-    styleSpin(); // 确保动画样式存在
+    styleSpin();
 
     try {
       const data = await window.electronAPI.checkUpdate();
@@ -467,20 +553,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (updateConfirm) {
           window.electronAPI.openUrl('https://github.com/junloye/Todo-List/releases');
         }
+        log(`发现新版本 v${latestVersion}`);
       } else {
         updateStatusText.innerHTML = '当前已是最新版本';
         updateStatusText.style.color = '#81c784';
         showToast('暂无更新');
+        log('已是最新版本');
       }
     } catch (error) {
       console.error('检查更新失败:', error);
       let errorMsg = '网络请求失败';
       
       if (error.message) {
-        if (error.message.includes('请求限制')) {
+        if (error.message.includes('请求限制') || error.message.includes('速率限制')) {
           errorMsg = error.message;
-        } else if (error.message.includes('速率限制')) {
-          errorMsg = 'GitHub API 请求过于频繁，请稍后重试';
         } else if (error.message.includes('超时')) {
           errorMsg = '网络请求超时，请检查网络连接';
         } else if (error.message.includes('连接')) {
@@ -493,6 +579,10 @@ document.addEventListener('DOMContentLoaded', () => {
       updateStatusText.innerHTML = errorMsg;
       updateStatusText.style.color = '#e57373';
       showToast(errorMsg, 'error');
+      log(`检查更新失败: ${errorMsg}`, 'error');
+    } finally {
+      updating = false;
+      checkUpdateBtn.disabled = false;
     }
   });
 });

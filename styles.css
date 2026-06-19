@@ -54,6 +54,8 @@ body {
   overflow: hidden;
   height: 100vh;
   user-select: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .app {

@@ -1,5 +1,12 @@
 # Todo List 桌面应用
 
+[![版本](https://img.shields.io/badge/版本-1.1.0-blue?style=flat-square&logo=github)](https://github.com/junloye/Todo-List/releases)
+[![许可证](https://img.shields.io/badge/许可证-MIT-green?style=flat-square&logo=opensourceinitiative)](LICENSE)
+[![Electron](https://img.shields.io/badge/Electron-28.x-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![平台](https://img.shields.io/badge/平台-Windows-0078D6?style=flat-square&logo=windows)](https://github.com/junloye/Todo-List/releases)
+[![GitHub 下载](https://img.shields.io/github/downloads/junloye/Todo-List/total?style=flat-square&logo=github&label=下载)](https://github.com/junloye/Todo-List/releases)
+[![GitHub 仓库](https://img.shields.io/badge/GitHub-junloye%2FTodo--List-181717?style=flat-square&logo=github)](https://github.com/junloye/Todo-List)
+
 一个基于 Electron 的轻量级待办事项管理工具，支持任务增删改查、截止日期、深色模式等功能。
 
 ## 功能特性
@@ -81,17 +88,12 @@ npm run dist:portable # 生成便携版 exe（单文件）
 └── assets/           # 应用图标文件夹
 ```
 
-## 数据存储
-
-- 任务数据保存在系统用户目录下的 `todos.json` 文件中（`app.getPath('userData')`）。
-- 主题与截止日期开关设置保存在 `localStorage`。
-
 ## 快捷键与操作
 
 - 在任务输入框或日期选择框中按 `Enter` 快速添加任务。
-- 点击任务复选框可切换完成状态，完成时触发彩带效果。
+- 点击任务复选框可切换完成状态。
 - 点击任务右侧的编辑/删除图标进行修改或删除。
-- 点击侧边栏「设置」打开设置面板，可切换深色模式、关闭截止日期功能、检查更新。
+- 点击侧边栏「设置」打开设置面板，可切换深色模式、关闭截止日期功能、检查更新等。
 
 ## 常见问题
 
@@ -102,7 +104,7 @@ A: 导出时会弹出系统保存对话框，用户可选择保存路径。
 A: 请确保网络可访问 GitHub API。网络波动可能导致更新失败。如果使用预构建版本，请检查 Releases 页面的版本号是否与软件内显示一致。
 
 **Q: 如何更新到新版本？**  
-A: 在软件内点击“检查更新”，如有新版本会提示跳转到 Releases 页面，下载新的 exe 替换旧文件即可（数据会自动保留）。
+A: 在软件内点击“检查更新”，如有新版本会提示跳转到 Releases 页面，下载新的 exe 替换旧文件即可。
 
 ## 许可证
 
