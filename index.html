@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net">
   <title>Todo List</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="statics/styles.css">
+  <link rel="stylesheet" href="statics/settings.css">
 </head>
 <body>
   <div class="app">
@@ -90,7 +91,6 @@
           </div>
         </div>
 
-        <!-- 设置面板（无变化） -->
         <div id="settingsView" class="view-panel">
           <div class="settings-header">
             <button id="closeSettingsViewBtn" class="icon-btn">
@@ -105,16 +105,31 @@
           <div class="settings-section">
             <h3>常规偏好</h3>
             <div class="settings-list">
+              <!-- 主题选择：圆形颜色按钮 -->
               <div class="settings-item">
                 <div class="settings-info">
-                  <span class="settings-title">深色模式</span>
-                  <span class="settings-desc">切换应用程序的主题外观</span>
+                  <span class="settings-title">主题</span>
+                  <span class="settings-desc">选择应用程序的颜色方案</span>
                 </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="darkModeToggle">
-                  <span class="slider"></span>
-                </label>
+                <div class="theme-picker" id="themePicker">
+                  <button class="theme-btn" data-theme="light" title="浅色">
+                    <span class="theme-dot" style="background: #f0f0f0; border: 1.5px solid #bbb;"></span>
+                  </button>
+                  <button class="theme-btn" data-theme="dark" title="深色">
+                    <span class="theme-dot" style="background: #1e1e2e;"></span>
+                  </button>
+                  <button class="theme-btn" data-theme="blue" title="蓝色">
+                    <span class="theme-dot" style="background: #1976d2;"></span>
+                  </button>
+                  <button class="theme-btn" data-theme="green" title="绿色">
+                    <span class="theme-dot" style="background: #388e3c;"></span>
+                  </button>
+                  <button class="theme-btn" data-theme="purple" title="紫色">
+                    <span class="theme-dot" style="background: #8e24aa;"></span>
+                  </button>
+                </div>
               </div>
+
               <div class="settings-item">
                 <div class="settings-info">
                   <span class="settings-title">启用截止日期</span>
@@ -125,6 +140,7 @@
                   <span class="slider"></span>
                 </label>
               </div>
+
               <div class="settings-item">
                 <div class="settings-info">
                   <span class="settings-title">调试模式</span>
@@ -234,8 +250,8 @@
       <input type="text" id="editTags" placeholder="标签，用逗号分隔（如：工作, 紧急）">
       <input type="date" id="editDueDate">
       <div class="modal-buttons">
-        <button id="saveEditBtn" class="primary-btn">保存</button>
         <button id="closeModalBtn" class="secondary-btn">取消</button>
+        <button id="saveEditBtn" class="primary-btn">保存</button>
       </div>
     </div>
   </dialog>
@@ -249,8 +265,8 @@
       </div>
       <p id="dialogMessage">提示内容</p>
       <div class="dialog-buttons">
-        <button id="dialogConfirmBtn" class="primary-btn">确定</button>
         <button id="dialogCancelBtn" class="secondary-btn">取消</button>
+        <button id="dialogConfirmBtn" class="primary-btn">确定</button>
       </div>
     </div>
   </dialog>

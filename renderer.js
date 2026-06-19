@@ -14,7 +14,9 @@ const tasksView = document.getElementById('tasksView');
 const settingsView = document.getElementById('settingsView');
 const closeSettingsViewBtn = document.getElementById('closeSettingsViewBtn');
 
-const darkModeToggle = document.getElementById('darkModeToggle');
+// 主题选择器（圆形按钮）
+const themePicker = document.getElementById('themePicker');
+const themeBtns = document.querySelectorAll('.theme-btn');
 const dueDateEnableToggle = document.getElementById('dueDateEnableToggle');
 const debugModeToggle = document.getElementById('debugModeToggle');
 const logLevelSelect = document.getElementById('logLevelSelect');
@@ -106,20 +108,34 @@ async function init() {
 }
 
 function loadConfig() {
-  APP_CONFIG.theme = localStorage.getItem('todo_theme') || 'light';
+  // 读取主题
+  let theme = localStorage.getItem('todo_theme') || 'light';
+  const validThemes = ['light', 'dark', 'blue', 'green', 'purple'];
+  if (!validThemes.includes(theme)) {
+    theme = 'light';
+  }
+  APP_CONFIG.theme = theme;
+  document.body.setAttribute('data-theme', theme);
+
+  // 高亮当前主题按钮
+  themeBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+
   const savedDue = localStorage.getItem('todo_due_enabled');
   APP_CONFIG.dueDateEnabled = savedDue !== null ? savedDue === 'true' : true;
-
-  if (APP_CONFIG.theme === 'dark') {
-    document.body.classList.add('dark-mode');
-    darkModeToggle.checked = true;
-  } else {
-    document.body.classList.remove('dark-mode');
-    darkModeToggle.checked = false;
-  }
-
   dueDateEnableToggle.checked = APP_CONFIG.dueDateEnabled;
   applyDueDateFeatureState();
+
+  const debug = localStorage.getItem('todo_debug_mode') === 'true';
+  APP_CONFIG.debugMode = debug;
+  debugModeToggle.checked = debug;
+}
+
+function saveConfig() {
+  localStorage.setItem('todo_theme', APP_CONFIG.theme);
+  localStorage.setItem('todo_due_enabled', APP_CONFIG.dueDateEnabled);
+  localStorage.setItem('todo_debug_mode', APP_CONFIG.debugMode);
 }
 
 function applyDueDateFeatureState() {
@@ -138,12 +154,6 @@ function applyDueDateFeatureState() {
       }
     }
   }
-}
-
-function saveConfig() {
-  localStorage.setItem('todo_theme', APP_CONFIG.theme);
-  localStorage.setItem('todo_due_enabled', APP_CONFIG.dueDateEnabled);
-  localStorage.setItem('todo_debug_mode', APP_CONFIG.debugMode);
 }
 
 function showToast(message, type = 'success') {
@@ -248,7 +258,6 @@ function render() {
       `;
     }
 
-    // 子任务 HTML（含编辑按钮）
     let subtaskHtml = '';
     if (task.subtasks && task.subtasks.length) {
       subtaskHtml = `<ul class="subtask-list">${task.subtasks.map(st =>
@@ -388,7 +397,6 @@ async function addTask() {
   if (!title) return;
   const dueDate = APP_CONFIG.dueDateEnabled ? dueDateInput.value : '';
 
-  // 支持全角/半角逗号分隔标签和子任务
   const tagsRaw = taskTagsInput.value.trim();
   const tags = tagsRaw ? tagsRaw.split(/[，,]\s*/).filter(s => s !== '') : [];
 
@@ -454,7 +462,6 @@ function openEditModal(task) {
 async function saveEdit() {
   const title = editTitle.value.trim();
   if (!title) return;
-  // 支持全角/半角逗号
   const tags = editTags.value.split(/[，,]\s*/).filter(s => s !== '');
 
   const task = tasks.find(t => t.id === editingTaskId);
@@ -543,6 +550,7 @@ function styleSpin() {
   }
 }
 
+// DOM 事件绑定
 document.addEventListener('DOMContentLoaded', () => {
   init();
   initCustomSelect();
@@ -607,7 +615,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 编辑子任务
     if (e.target.closest('.edit-subtask-btn')) {
       const subtaskItem = e.target.closest('.subtask-item');
       if (!subtaskItem) return;
@@ -619,7 +626,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const subtask = task.subtasks.find(st => st.id === subtaskId);
       if (!subtask) return;
 
-      // 取消其他正在编辑的输入框
       const existingInput = document.querySelector('.subtask-edit-input');
       if (existingInput) {
         const original = existingInput.dataset.originalText || '';
@@ -722,16 +728,22 @@ document.addEventListener('DOMContentLoaded', () => {
     tasksView.classList.add('active');
   });
 
-  darkModeToggle.addEventListener('change', (e) => {
-    if (e.target.checked) {
-      document.body.classList.add('dark-mode');
-      APP_CONFIG.theme = 'dark';
-    } else {
-      document.body.classList.remove('dark-mode');
-      APP_CONFIG.theme = 'light';
-    }
-    saveConfig();
-    log(`切换主题: ${APP_CONFIG.theme}`);
+  // ----- 主题切换：圆形按钮 -----
+  themeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newTheme = btn.dataset.theme;
+      if (APP_CONFIG.theme === newTheme) return;
+
+      APP_CONFIG.theme = newTheme;
+      document.body.setAttribute('data-theme', newTheme);
+
+      // 高亮当前按钮
+      themeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      saveConfig();
+      log(`切换主题: ${newTheme}`);
+    });
   });
 
   dueDateEnableToggle.addEventListener('change', (e) => {

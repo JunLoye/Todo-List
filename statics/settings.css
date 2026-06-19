@@ -1,0 +1,68 @@
+.settings-entry-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--btn-secondary-border);
+    padding: 10px;
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    transition: 0.15s;
+  }
+  
+  .settings-entry-btn:hover {
+    background: var(--btn-secondary-hover-bg);
+  }
+  
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.settings-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.settings-section {
+  margin-bottom: 28px;
+}
+.settings-section h3 {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+.settings-list {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.settings-item:last-child {
+  border-bottom: none;
+}
+.settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.settings-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.settings-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
