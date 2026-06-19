@@ -142,7 +142,7 @@ ipcMain.handle('todo:save', (event, todos) => saveTodos(todos));
 ipcMain.handle('todo:export', async (event, todos) => {
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: '导出任务数据',
-    defaultPath: `todos_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`,
+    defaultPath: `todos_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`,
     filters: [{ name: 'JSON', extensions: ['json'] }]
   });
   if (canceled || !filePath) {

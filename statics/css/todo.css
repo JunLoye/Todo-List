@@ -1,0 +1,473 @@
+.content-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .view-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  
+  .view-panel.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  /* 输入区域 */
+  .input-section {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  
+  .input-wrapper {
+    flex: 1;
+    position: relative;
+  }
+  
+  input[type="text"],
+  input[type="date"],
+  select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  
+  input[type="text"]:focus,
+  input[type="date"]:focus,
+  select:focus {
+    border-color: var(--text-primary);
+  }
+  
+  .date-input-container {
+    display: inline-block;
+    width: 160px;
+  }
+  
+  .input-extras {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .input-extras .input-wrapper {
+    flex: 1;
+  }
+  
+  .input-extras input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  
+  .input-extras input:focus {
+    border-color: var(--text-primary);
+  }
+  
+  /* 工具栏 */
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+  
+  .custom-select {
+    position: relative;
+    display: inline-block;
+    min-width: 180px;
+  }
+  
+  .select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    gap: 12px;
+    white-space: nowrap;
+  }
+  
+  .select-trigger:hover {
+    background: var(--btn-secondary-hover-bg);
+  }
+  
+  .select-trigger:focus {
+    border-color: var(--text-primary);
+    outline: none;
+  }
+  
+  .select-trigger svg {
+    flex-shrink: 0;
+  }
+  
+  .select-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 6px 0;
+    list-style: none;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: none;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .custom-select.open .select-options {
+    display: block;
+  }
+  
+  .option-item {
+    padding: 8px 14px;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.1s;
+    font-size: 0.9rem;
+  }
+  
+  .option-item:hover {
+    background: var(--btn-secondary-hover-bg);
+  }
+  
+  .option-item.active {
+    background: var(--filter-active-bg);
+    color: var(--filter-active-color);
+    font-weight: 500;
+  }
+  
+  .select-options::-webkit-scrollbar {
+    width: 4px;
+  }
+  .select-options::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 2px;
+  }
+  
+  /* 按钮 */
+  .primary-btn {
+    background: var(--btn-primary-bg);
+    color: var(--filter-active-color);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  
+  .primary-btn:hover {
+    background: var(--btn-primary-hover);
+  }
+  
+  .secondary-btn {
+    background: var(--btn-secondary-bg);
+    border: 1px solid var(--btn-secondary-border);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  
+  .secondary-btn:hover {
+    background: var(--btn-secondary-hover-bg);
+  }
+  
+  /* 任务列表 */
+  .todo-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  
+  .todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 20px;
+  }
+  
+  /* 任务项 - 增加颜色状态 */
+  .todo-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 14px 16px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    transition: transform 0.15s, box-shadow 0.15s;
+    border-left: 4px solid transparent; /* 为颜色状态预留 */
+  }
+  
+  .todo-item:hover {
+    background: var(--card-hover);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  
+  /* 已完成任务 */
+  .todo-item.completed {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    border-left-color: var(--success-color);
+  }
+  
+  /* 未完成且已过期 */
+  .todo-item.overdue {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+    border-left-color: var(--overdue-color);
+  }
+  
+  /* 同时 completed 和 overdue 不会同时出现，因为 overdue 仅当未完成时加 */
+  
+  .todo-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .todo-checkbox {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: 0.15s;
+    background: transparent;
+  }
+  
+  .todo-checkbox:checked {
+    background: var(--checkbox-completed-bg);  /* 使用独立颜色 */
+    border-color: var(--checkbox-completed-bg);
+  }
+  
+  .todo-checkbox:checked::before {
+    content: "";
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid var(--filter-active-color);
+    border-bottom: 2px solid var(--filter-active-color);
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+  
+  .todo-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .todo-title {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    word-break: break-all;
+  }
+  
+  .todo-item.completed .todo-title {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+  }
+  
+  .todo-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+  
+  .todo-meta .overdue {
+    color: var(--overdue-color);
+    font-weight: 500;
+  }
+  
+  .todo-actions {
+    display: flex;
+    gap: 4px;
+  }
+  
+  .icon-btn {
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    color: var(--text-secondary);
+    transition: 0.15s;
+  }
+  
+  .icon-btn:hover {
+    background: var(--btn-secondary-hover-bg);
+    color: var(--text-primary);
+  }
+  
+  .icon-btn.delete-btn:hover {
+    color: var(--danger-color);
+    background: var(--danger-hover-bg);
+  }
+  
+  .todo-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .tag {
+    background: var(--btn-secondary-hover-bg);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+  
+  /* 子任务 */
+  .subtask-container {
+    margin-top: 8px;
+    padding-left: 32px;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 8px;
+  }
+  .subtask-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 6px 0;
+  }
+  .subtask-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.9rem;
+  }
+  .subtask-checkbox {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+  }
+  .subtask-checkbox:checked {
+    background: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+  }
+  .subtask-checkbox:checked::before {
+    content: "";
+    width: 8px;
+    height: 4px;
+    border-left: 2px solid var(--filter-active-color);
+    border-bottom: 2px solid var(--filter-active-color);
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+  .subtask-title {
+    flex: 1;
+  }
+  .subtask-item.completed .subtask-title {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+  }
+  .delete-subtask-btn {
+    width: 24px;
+    height: 24px;
+  }
+  .add-subtask {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .subtask-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    outline: none;
+  }
+  .subtask-input:focus {
+    border-color: var(--text-primary);
+  }
+  .add-subtask-btn {
+    width: 28px;
+    height: 28px;
+    background: var(--btn-primary-bg);
+    color: var(--filter-active-color);
+    border-radius: 6px;
+  }
+  .add-subtask-btn:hover {
+    background: var(--btn-primary-hover);
+  }
+  
+  .subtask-actions {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+  .subtask-edit-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border-color);
+    padding: 0;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    outline: none;
+    width: 100%;
+  }
+  .edit-subtask-btn {
+    color: var(--text-secondary);
+  }
+  .edit-subtask-btn:hover {
+    color: var(--text-primary);
+  }

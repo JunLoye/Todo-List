@@ -53,7 +53,7 @@ const dialogCancelBtn = document.getElementById('dialogCancelBtn');
 const dialogIconPath = document.getElementById('dialogIconPath');
 const toastContainer = document.getElementById('toastContainer');
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 let tasks = [];
 let currentFilter = 'all';
 let currentSort = 'create-desc';
@@ -209,6 +209,7 @@ function showConfirmDialog(message, type = 'warning') {
 }
 
 function render() {
+  const todayStr = new Date().toISOString().split('T')[0];
   todoListEl.innerHTML = '';
   let filtered = [...tasks];
 
@@ -231,7 +232,12 @@ function render() {
 
   filtered.forEach(task => {
     const item = document.createElement('div');
-    item.className = `todo-item ${task.completed ? 'completed' : ''}`;
+    let classes = 'todo-item';
+    if (task.completed) classes += ' completed';
+    if (!task.completed && task.dueDate && task.dueDate < new Date().toISOString().split('T')[0]) {
+      classes += ' overdue';
+    }
+    item.className = classes;
     item.setAttribute('data-id', task.id);
 
     let tagsHtml = '';
@@ -550,18 +556,26 @@ function styleSpin() {
   }
 }
 
-// DOM 事件绑定
 document.addEventListener('DOMContentLoaded', () => {
+  // ----- 初始化 -----
   init();
   initCustomSelect();
 
+  // ----- 添加任务 -----
   addBtn.addEventListener('click', addTask);
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
   if (dueDateInput) dueDateInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
+
+  // ----- 清除已完成 -----
   clearCompletedBtn.addEventListener('click', clearCompleted);
+
+  // ----- 导出（原 exportBtn 已在 HTML 中移除，保留以防万一）-----
   exportBtn?.addEventListener('click', exportData);
+
+  // ----- 筛选 -----
   filterBtns.forEach(btn => btn.addEventListener('click', () => setFilter(btn.getAttribute('data-filter'))));
 
+  // ----- 任务列表事件（点击、变更）-----
   todoListEl.addEventListener('click', async (e) => {
     const item = e.target.closest('.todo-item');
     if (!item) return;
@@ -615,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // 编辑子任务（内联编辑）
     if (e.target.closest('.edit-subtask-btn')) {
       const subtaskItem = e.target.closest('.subtask-item');
       if (!subtaskItem) return;
@@ -626,6 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const subtask = task.subtasks.find(st => st.id === subtaskId);
       if (!subtask) return;
 
+      // 如果有其他正在编辑的，先保存
       const existingInput = document.querySelector('.subtask-edit-input');
       if (existingInput) {
         const original = existingInput.dataset.originalText || '';
@@ -715,9 +731,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ----- 编辑模态框 -----
   saveEditBtn.addEventListener('click', saveEdit);
   closeModalBtn.addEventListener('click', () => editModal.close());
 
+  // ----- 视图切换（任务 / 设置）-----
   settingsBtn.addEventListener('click', () => {
     tasksView.classList.remove('active');
     settingsView.classList.add('active');
@@ -728,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tasksView.classList.add('active');
   });
 
-  // ----- 主题切换：圆形按钮 -----
+  // ----- 主题切换（圆形按钮）-----
   themeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const newTheme = btn.dataset.theme;
@@ -737,7 +755,6 @@ document.addEventListener('DOMContentLoaded', () => {
       APP_CONFIG.theme = newTheme;
       document.body.setAttribute('data-theme', newTheme);
 
-      // 高亮当前按钮
       themeBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
@@ -746,6 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ----- 截止日期开关 -----
   dueDateEnableToggle.addEventListener('change', (e) => {
     APP_CONFIG.dueDateEnabled = e.target.checked;
     saveConfig();
@@ -754,6 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
     log(`截止日期功能: ${APP_CONFIG.dueDateEnabled ? '启用' : '禁用'}`);
   });
 
+  // ----- 调试模式开关 -----
   debugModeToggle.addEventListener('change', (e) => {
     APP_CONFIG.debugMode = e.target.checked;
     saveConfig();
@@ -766,6 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
     log(`调试模式: ${APP_CONFIG.debugMode ? '启用' : '禁用'}`);
   });
 
+  // ----- 日志级别选择 -----
   logLevelSelect?.addEventListener('change', async (e) => {
     const level = e.target.value;
     if (window.electronAPI && window.electronAPI.setLogLevel) {
@@ -781,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   importDataBtn.addEventListener('click', importData);
   exportDataBtn.addEventListener('click', exportData);
-  
+
   deleteAllDataBtn.addEventListener('click', async () => {
     const confirm = await showConfirmDialog('确认删除所有的任务数据吗？此操作无法撤销！', 'danger');
     if (confirm) {
@@ -795,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   resetSettingsBtn.addEventListener('click', async () => {
-    const confirm = await showConfirmDialog('确定恢复出厂默认设置吗？');
+    const confirm = await showConfirmDialog('确定恢复默认设置吗？');
     if (confirm) {
       localStorage.removeItem('todo_theme');
       localStorage.removeItem('todo_due_enabled');
@@ -822,6 +842,22 @@ document.addEventListener('DOMContentLoaded', () => {
       openGithubBtn.disabled = false;
     }
   });
+
+  const openReleasesBtn = document.getElementById('openReleasesBtn');
+  if (openReleasesBtn) {
+    openReleasesBtn.addEventListener('click', async () => {
+      try {
+        openReleasesBtn.disabled = true;
+        await window.electronAPI.openUrl('https://github.com/junloye/Todo-List/releases');
+        log('打开更新日志页面');
+      } catch (error) {
+        showToast('无法打开更新日志，请检查网络', 'error');
+        log(`打开更新日志失败: ${error.message}`, 'error');
+      } finally {
+        openReleasesBtn.disabled = false;
+      }
+    });
+  }
 
   let updating = false;
   checkUpdateBtn.addEventListener('click', async () => {

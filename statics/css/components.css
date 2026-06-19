@@ -1,0 +1,228 @@
+/* 模态框 & 对话框 */
+.modal,
+.custom-dialog {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  padding: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  outline: none;
+  margin: 0 !important;
+  width: 90%;
+  max-width: 400px;
+}
+.modal::backdrop,
+.custom-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+.modal-content,
+.dialog-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.modal-buttons,
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+.custom-dialog {
+  max-width: 340px;
+}
+.dialog-content {
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+.dialog-icon {
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+#dialogMessage {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Toast */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: toastIn 0.2s ease forwards;
+  pointer-events: auto;
+  border-width: 1px;
+  border-style: solid;
+}
+@keyframes toastIn {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.toast.success {
+  background: var(--toast-success-bg);
+  border-color: var(--toast-success-border);
+  color: var(--toast-success-text);
+}
+.toast.error {
+  background: var(--toast-error-bg);
+  border-color: var(--toast-error-border);
+  color: var(--toast-error-text);
+}
+
+/* 危险按钮 */
+.danger-btn {
+  background: transparent;
+  border: 1px solid var(--danger-color);
+  color: var(--danger-color);
+  padding: 8px 12px;
+  border-radius: 40px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: 0.1s;
+}
+.danger-btn:hover {
+  background: var(--danger-hover-bg);
+  border-color: var(--danger-color);
+  opacity: 0.8;
+}
+
+/* 关于信息 */
+.about-info {
+  background: var(--bg-sidebar);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+.about-info p {
+  margin: 8px 0;
+  color: var(--text-primary);
+}
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.update-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 主题选择器 & 开关 */
+.theme-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.theme-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.theme-btn:hover {
+  transform: scale(1.12);
+  border-color: var(--text-secondary);
+}
+.theme-btn:active {
+  transform: scale(0.92);
+}
+.theme-btn.active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--text-primary);
+}
+.theme-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: block;
+  flex-shrink: 0;
+}
+.theme-btn[data-theme="light"] .theme-dot {
+  background: #f5f5f5 !important;
+  border: 1.5px solid #bbb;
+}
+.theme-btn[data-theme="light"].active .theme-dot {
+  border-color: var(--text-primary);
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border-color);
+  transition: 0.2s;
+  border-radius: 24px;
+}
+.slider::before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #0078d4;
+}
+input:checked + .slider::before {
+  transform: translateX(20px);
+}

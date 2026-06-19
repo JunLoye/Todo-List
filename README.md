@@ -3,7 +3,7 @@
 [![版本](https://img.shields.io/badge/版本-1.1.0-blue?style=flat-square&logo=github)](https://github.com/junloye/Todo-List/releases)
 [![许可证](https://img.shields.io/badge/许可证-MIT-green?style=flat-square&logo=opensourceinitiative)](LICENSE)
 [![Electron](https://img.shields.io/badge/Electron-28.x-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
-![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/JunLoye/Todo-List)
+[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/JunLoye/Todo-List)](https://github.com/JunLoye/Todo-List/issues)
 [![GitHub 下载](https://img.shields.io/github/downloads/junloye/Todo-List/total?style=flat-square&logo=github&label=下载)](https://github.com/junloye/Todo-List/releases)
 [![GitHub 仓库](https://img.shields.io/badge/GitHub-junloye%2FTodo--List-181717?style=flat-square&logo=github)](https://github.com/junloye/Todo-List)
 
