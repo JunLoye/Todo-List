@@ -959,14 +959,49 @@ document.addEventListener('DOMContentLoaded', () => {
   saveEditBtn.addEventListener('click', saveEdit);
   closeModalBtn.addEventListener('click', () => editModal.close());
 
+  // --- 修改点 1：设置按钮切换行为 ---
   settingsBtn.addEventListener('click', () => {
-    tasksView.classList.remove('active');
-    settingsView.classList.add('active');
-    log('打开设置面板');
+    if (settingsView.classList.contains('active')) {
+      // 如果当前在设置页，则关闭
+      settingsView.classList.remove('active');
+      tasksView.classList.add('active');
+      log('通过点击设置按钮关闭设置面板');
+    } else {
+      // 否则打开设置页
+      tasksView.classList.remove('active');
+      settingsView.classList.add('active');
+      log('打开设置面板');
+    }
   });
+
   closeSettingsViewBtn.addEventListener('click', () => {
     settingsView.classList.remove('active');
     tasksView.classList.add('active');
+  });
+
+  // --- 修改点 2：全局 ESC 键监听，关闭设置页（优先关闭打开的对话框）---
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      // 如果编辑模态框打开，关闭它
+      if (editModal.open) {
+        editModal.close();
+        e.preventDefault();
+        return;
+      }
+      // 如果自定义对话框打开，关闭它
+      if (customDialog.open) {
+        customDialog.close();
+        e.preventDefault();
+        return;
+      }
+      // 如果设置面板可见，关闭它
+      if (settingsView.classList.contains('active')) {
+        settingsView.classList.remove('active');
+        tasksView.classList.add('active');
+        log('通过 ESC 键关闭设置面板');
+        e.preventDefault();
+      }
+    }
   });
 
   themeBtns.forEach(btn => {
