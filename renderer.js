@@ -14,7 +14,6 @@ const tasksView = document.getElementById('tasksView');
 const settingsView = document.getElementById('settingsView');
 const closeSettingsViewBtn = document.getElementById('closeSettingsViewBtn');
 
-// 主题选择器（圆形按钮）
 const themePicker = document.getElementById('themePicker');
 const themeBtns = document.querySelectorAll('.theme-btn');
 const dueDateEnableToggle = document.getElementById('dueDateEnableToggle');
@@ -108,16 +107,14 @@ async function init() {
 }
 
 function loadConfig() {
-  // 读取主题
   let theme = localStorage.getItem('todo_theme') || 'light';
-  const validThemes = ['light', 'dark', 'blue', 'green', 'purple'];
+  const validThemes = ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'pink', 'yellow'];
   if (!validThemes.includes(theme)) {
     theme = 'light';
   }
   APP_CONFIG.theme = theme;
   document.body.setAttribute('data-theme', theme);
 
-  // 高亮当前主题按钮
   themeBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === theme);
   });

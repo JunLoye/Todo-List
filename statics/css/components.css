@@ -226,3 +226,31 @@ input:checked + .slider {
 input:checked + .slider::before {
   transform: translateX(20px);
 }
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-item .option-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.option-item.active .option-icon {
+  color: var(--filter-active-color);
+}
+
+#sortSelectedText {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#sortSelectedText .selected-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}

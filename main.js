@@ -3,14 +3,12 @@ const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 
-// ---------- 全局变量 ----------
 let mainWindow = null;
 let debugEnabled = false;
 let logLevel = 'info';
 
 const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
 
-// ---------- 配置管理 ----------
 const configPath = path.join(app.getPath('userData'), 'config.json');
 
 function loadConfig() {
@@ -34,7 +32,6 @@ function saveConfig(config) {
   }
 }
 
-// ---------- 日志系统 ----------
 const logDir = path.join(process.cwd(), 'logs');
 const logFilePath = path.join(logDir, 'app.log');
 
@@ -65,7 +62,6 @@ function logMessage(level, ...args) {
   }
 }
 
-// ---------- 数据路径 ----------
 const getDataPath = () => path.join(app.getPath('userData'), 'todos.json');
 
 async function ensureDataFile() {
@@ -92,7 +88,6 @@ async function saveTodos(todos) {
   logMessage('info', '保存任务数据，共', todos.length, '项');
 }
 
-// ---------- 创建窗口 ----------
 function createWindow() {
   app.commandLine.appendSwitch('--force-device-scale-factor', '1');
   app.setAppUserModelId('com.junloye.todolist');
@@ -119,7 +114,6 @@ function createWindow() {
   return win;
 }
 
-// ---------- 应用生命周期 ----------
 app.whenReady().then(async () => {
   loadConfig();
   if (debugEnabled) {
@@ -135,7 +129,6 @@ app.on('window-all-closed', () => {
   logMessage('info', '应用退出');
 });
 
-// ---------- IPC 处理 ----------
 ipcMain.handle('todo:load', loadTodos);
 ipcMain.handle('todo:save', (event, todos) => saveTodos(todos));
 
@@ -181,7 +174,6 @@ ipcMain.handle('todo:import', async () => {
   }
 });
 
-// ---------- 检查更新 ----------
 ipcMain.handle('update:check', async () => {
   logMessage('info', '开始检查更新');
   const controller = new AbortController();

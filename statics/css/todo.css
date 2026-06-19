@@ -214,7 +214,6 @@ select:focus {
   background: var(--btn-secondary-hover-bg);
 }
 
-/* 任务列表 */
 .todo-list-container {
   flex: 1;
   overflow-y: auto;
@@ -228,7 +227,6 @@ select:focus {
   padding-bottom: 20px;
 }
 
-/* 任务项 - 增加颜色状态 */
 .todo-item {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -238,7 +236,11 @@ select:focus {
   flex-direction: column;
   align-items: stretch;
   transition: transform 0.15s, box-shadow 0.15s;
-  border-left: 4px solid transparent; /* 为颜色状态预留 */
+  
+  border-left: 4px solid transparent;
+  border-left-color: var(--border-color);
+  border-left-width: 4px;
+  border-left-style: solid;
 }
 
 .todo-item:hover {
@@ -246,21 +248,17 @@ select:focus {
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-/* 已完成任务 */
 .todo-item.completed {
   background: var(--success-bg);
   border-color: var(--success-border);
   border-left-color: var(--success-color);
 }
 
-/* 未完成且已过期 */
 .todo-item.overdue {
   background: var(--error-bg);
   border-color: var(--error-border);
   border-left-color: var(--overdue-color);
 }
-
-/* 同时 completed 和 overdue 不会同时出现，因为 overdue 仅当未完成时加 */
 
 .todo-main {
   display: flex;
