@@ -62,7 +62,6 @@ const APP_CONFIG = {
   debugMode: false
 };
 
-// ==================== 日期选择器组件 ====================
 function createDatePicker({
   displayInput,
   toggleBtn,
@@ -70,7 +69,7 @@ function createDatePicker({
   hiddenInput,
   onSelect
 }) {
-  let selectedDate = null; // Date 对象
+  let selectedDate = null;
   let viewDate = new Date();
   viewDate.setHours(0, 0, 0, 0);
 
@@ -119,7 +118,6 @@ function createDatePicker({
     const daysContainer = popup.querySelector('.calendar-days');
     daysContainer.innerHTML = '';
 
-    // 上月填充
     const prevMonthDays = new Date(year, month, 0).getDate();
     for (let i = firstDay - 1; i >= 0; i--) {
       const day = prevMonthDays - i;
@@ -129,7 +127,6 @@ function createDatePicker({
       daysContainer.appendChild(cell);
     }
 
-    // 本月天数
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = document.createElement('div');
       cell.className = 'calendar-day';
@@ -154,7 +151,6 @@ function createDatePicker({
       daysContainer.appendChild(cell);
     }
 
-    // 下月填充
     const totalCells = firstDay + daysInMonth;
     const remaining = (7 - (totalCells % 7)) % 7;
     for (let d = 1; d <= remaining; d++) {
@@ -285,7 +281,6 @@ function createDatePicker({
   return { setDate, getDate: () => selectedDate, closePopup };
 }
 
-// ==================== 主逻辑 ====================
 function log(message, level = 'info') {
   if (window.electronAPI && window.electronAPI.log) {
     window.electronAPI.log(message, level);
@@ -360,7 +355,6 @@ function applyDueDateFeatureState() {
   const isEnabled = APP_CONFIG.dueDateEnabled;
   dueDateContainer.style.display = isEnabled ? 'inline-block' : 'none';
   if (sortDueAscOpt) sortDueAscOpt.style.display = isEnabled ? 'block' : 'none';
-  // 编辑模态框中的日期选择器隐藏
   const editPickerWrapper = document.getElementById('editDueDatePicker');
   if (editPickerWrapper) {
     editPickerWrapper.style.display = isEnabled ? 'flex' : 'none';
@@ -604,7 +598,6 @@ function initCustomSelect() {
   });
 }
 
-// ----- 任务操作 -----
 async function addTask() {
   const title = taskInput.value.trim();
   if (!title) return;
@@ -633,7 +626,6 @@ async function addTask() {
 
   tasks.push(newTask);
   taskInput.value = '';
-  // 清空日期选择器
   mainDatePicker.setDate('');
   taskTagsInput.value = '';
   taskSubtasksInput.value = '';
@@ -677,7 +669,7 @@ async function saveEdit() {
   const title = editTitle.value.trim();
   if (!title) return;
   const tags = editTags.value.split(/[，,]\s*/).filter(s => s !== '');
-  const dueDate = document.getElementById('editDueDate').value; // 隐藏 input
+  const dueDate = document.getElementById('editDueDate').value;
 
   const task = tasks.find(t => t.id === editingTaskId);
   if (task) {
@@ -765,10 +757,7 @@ function styleSpin() {
   }
 }
 
-// ==================== DOM 初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
-  // ----- 初始化日期选择器 -----
-  // 主界面日期选择器
   const dueDateDisplay = document.getElementById('dueDateDisplay');
   const dueDateToggle = document.getElementById('dueDateToggleBtn');
   const dueDatePopup = document.getElementById('calendarPopup');
@@ -784,7 +773,6 @@ document.addEventListener('DOMContentLoaded', () => {
     onSelect: (dateStr) => {}
   });
 
-  // 编辑模态框日期选择器
   const editDueDateDisplay = document.getElementById('editDueDateDisplay');
   const editDueDateToggle = document.querySelector('#editDueDatePicker .edit-date-toggle');
   const editDueDatePopup = document.getElementById('editCalendarPopup');
@@ -800,29 +788,21 @@ document.addEventListener('DOMContentLoaded', () => {
     onSelect: (dateStr) => {}
   });
 
-  // 应用截止日期启用状态（隐藏/显示）
   const dueDateContainer = document.getElementById('dueDatePicker');
   window.dueDateContainer = dueDateContainer;
 
-  // ----- 初始化应用 -----
   init();
   initCustomSelect();
 
-  // ----- 添加任务 -----
   addBtn.addEventListener('click', addTask);
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
-  // 日期选择器不响应回车，由按钮统一处理
-
-  // ----- 清除已完成 -----
+  
   clearCompletedBtn.addEventListener('click', clearCompleted);
 
-  // ----- 导出 -----
   exportBtn?.addEventListener('click', exportData);
 
-  // ----- 筛选 -----
   filterBtns.forEach(btn => btn.addEventListener('click', () => setFilter(btn.getAttribute('data-filter'))));
 
-  // ----- 任务列表事件（点击、变更）-----
   todoListEl.addEventListener('click', async (e) => {
     const item = e.target.closest('.todo-item');
     if (!item) return;
@@ -1102,15 +1082,14 @@ document.addEventListener('DOMContentLoaded', () => {
   checkUpdateBtn.addEventListener('click', async () => {
     if (updating) return;
     updating = true;
-    checkUpdateBtn.disabled = true;
 
-    updateStatusText.innerHTML = `
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
-        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-      </svg>
-      检查中...
-    `;
-    updateStatusText.style.color = 'var(--text-secondary)';
+    const originalHTML = checkUpdateBtn.innerHTML;
+    checkUpdateBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           style="animation: spin 1s linear infinite; display:inline-block; vertical-align:middle;">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+      </svg> 检查中...`;
+    checkUpdateBtn.disabled = true;
 
     styleSpin();
 
@@ -1151,8 +1130,9 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(errorMsg, 'error');
       log(`检查更新失败: ${errorMsg}`, 'error');
     } finally {
-      updating = false;
+      checkUpdateBtn.innerHTML = originalHTML;
       checkUpdateBtn.disabled = false;
+      updating = false;
     }
   });
 });
