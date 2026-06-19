@@ -59,13 +59,28 @@
             <button id="addBtn" class="primary-btn">添加任务</button>
           </div>
 
+          <div class="input-extras">
+            <div class="input-wrapper" style="flex:1;">
+              <input type="text" id="taskTagsInput" placeholder="标签（逗号分隔，如：工作, 紧急）">
+            </div>
+            <div class="input-wrapper" style="flex:1;">
+              <input type="text" id="taskSubtasksInput" placeholder="子任务（逗号分隔，如：子任务1, 子任务2）">
+            </div>
+          </div>
+
           <div class="toolbar">
-            <div style="width: 120px;">
-              <select id="sortSelect">
-                <option value="create-desc">创建时间 (新->旧)</option>
-                <option value="create-asc">创建时间 (旧->新)</option>
-                <option value="due-asc" id="sortDueAscOpt">截止日期 (近->远)</option>
-              </select>
+            <div class="custom-select" id="customSortSelect">
+              <button class="select-trigger" id="sortTrigger" type="button">
+                <span id="sortSelectedText">创建时间 (新->旧)</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="2 4 6 8 10 4" />
+                </svg>
+              </button>
+              <ul class="select-options" id="sortOptions" role="listbox">
+                <li data-value="create-desc" class="option-item active">创建时间 (新->旧)</li>
+                <li data-value="create-asc" class="option-item">创建时间 (旧->新)</li>
+                <li data-value="due-asc" class="option-item" id="sortDueAscOpt">截止日期 (近->远)</li>
+              </ul>
             </div>
             <button id="clearCompletedBtn" class="secondary-btn">清除已完成</button>
           </div>
@@ -75,6 +90,7 @@
           </div>
         </div>
 
+        <!-- 设置面板（无变化） -->
         <div id="settingsView" class="view-panel">
           <div class="settings-header">
             <button id="closeSettingsViewBtn" class="icon-btn">
@@ -178,7 +194,7 @@
             <h3>关于应用</h3>
             <div class="about-info">
               <p style="font-weight: 500;">Todo List</p>
-              <p style="font-size: 0.85rem; color: var(--text-secondary);">版本：<span id="settingsVersionSpan">1.0.0</span></p>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">版本：<span id="settingsVersionSpan">1.2.0</span></p>
               <button id="openGithubBtn" class="secondary-btn github-link">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
@@ -215,6 +231,7 @@
     <div class="modal-content">
       <h3>编辑任务</h3>
       <input type="text" id="editTitle" placeholder="任务名称">
+      <input type="text" id="editTags" placeholder="标签，用逗号分隔（如：工作, 紧急）">
       <input type="date" id="editDueDate">
       <div class="modal-buttons">
         <button id="saveEditBtn" class="primary-btn">保存</button>

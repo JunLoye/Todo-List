@@ -4,7 +4,6 @@ const dueDateInput = document.getElementById('dueDateInput');
 const addBtn = document.getElementById('addBtn');
 const clearCompletedBtn = document.getElementById('clearCompletedBtn');
 const filterBtns = document.querySelectorAll('.filter-btn');
-const sortSelect = document.getElementById('sortSelect');
 const totalSpan = document.getElementById('totalCount');
 const activeSpan = document.getElementById('activeCount');
 const completedSpan = document.getElementById('completedCount');
@@ -28,11 +27,20 @@ const openGithubBtn = document.getElementById('openGithubBtn');
 const settingsVersionSpan = document.getElementById('settingsVersionSpan');
 const updateStatusText = document.getElementById('updateStatusText');
 const dueDateContainer = document.getElementById('dueDateContainer');
+
+const taskTagsInput = document.getElementById('taskTagsInput');
+const taskSubtasksInput = document.getElementById('taskSubtasksInput');
+
+const sortTrigger = document.getElementById('sortTrigger');
+const sortOptions = document.getElementById('sortOptions');
+const sortSelectedText = document.getElementById('sortSelectedText');
+const customSelect = document.getElementById('customSortSelect');
 const sortDueAscOpt = document.getElementById('sortDueAscOpt');
 
 const editModal = document.getElementById('editModal');
 const editTitle = document.getElementById('editTitle');
 const editDueDate = document.getElementById('editDueDate');
+const editTags = document.getElementById('editTags');
 const saveEditBtn = document.getElementById('saveEditBtn');
 const closeModalBtn = document.getElementById('closeModalBtn');
 
@@ -43,11 +51,12 @@ const dialogCancelBtn = document.getElementById('dialogCancelBtn');
 const dialogIconPath = document.getElementById('dialogIconPath');
 const toastContainer = document.getElementById('toastContainer');
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 let tasks = [];
 let currentFilter = 'all';
 let currentSort = 'create-desc';
 let editingTaskId = null;
+let expandedTaskIds = new Set();
 
 const APP_CONFIG = {
   theme: 'light',
@@ -77,7 +86,6 @@ async function init() {
     if (logLevelSelect) {
       logLevelSelect.value = level;
     }
-    // 若主进程 debug 已开启，确保渲染端状态一致
     if (debugFromMain && window.electronAPI.setDebugMode) {
       window.electronAPI.setDebugMode(true);
     }
@@ -87,6 +95,12 @@ async function init() {
 
   loadConfig();
   tasks = await window.electronAPI.loadTodos();
+  tasks = tasks.map(t => ({
+    ...t,
+    tags: t.tags || [],
+    subtasks: t.subtasks || []
+  }));
+  updateSortDisplay(currentSort);
   render();
   log('应用初始化完成');
 }
@@ -111,15 +125,17 @@ function loadConfig() {
 function applyDueDateFeatureState() {
   if (APP_CONFIG.dueDateEnabled) {
     dueDateContainer.style.display = 'inline-block';
-    sortDueAscOpt.style.display = 'block';
+    if (sortDueAscOpt) sortDueAscOpt.style.display = 'block';
     editDueDate.style.display = 'block';
   } else {
     dueDateContainer.style.display = 'none';
-    sortDueAscOpt.style.display = 'none';
+    if (sortDueAscOpt) sortDueAscOpt.style.display = 'none';
     editDueDate.style.display = 'none';
     if (currentSort === 'due-asc') {
-      currentSort = 'create-desc';
-      sortSelect.value = 'create-desc';
+      const firstOption = sortOptions.querySelector('.option-item');
+      if (firstOption) {
+        firstOption.click();
+      }
     }
   }
 }
@@ -208,6 +224,13 @@ function render() {
     item.className = `todo-item ${task.completed ? 'completed' : ''}`;
     item.setAttribute('data-id', task.id);
 
+    let tagsHtml = '';
+    if (task.tags && task.tags.length) {
+      tagsHtml = `<div class="todo-tags">${task.tags.map(tag =>
+        `<span class="tag">${tag}</span>`
+      ).join('')}</div>`;
+    }
+
     let metaHtml = '';
     if (APP_CONFIG.dueDateEnabled && task.dueDate) {
       const todayStr = new Date().toISOString().split('T')[0];
@@ -225,31 +248,81 @@ function render() {
       `;
     }
 
-    item.innerHTML = `
-      <input type="checkbox" class="todo-checkbox" ${task.completed ? 'checked' : ''}>
-      <div class="todo-content">
-        <span class="todo-title"></span>
-        ${metaHtml}
-      </div>
-      <div class="todo-actions">
-        <button class="icon-btn edit-btn" title="编辑">
+    // 子任务 HTML（含编辑按钮）
+    let subtaskHtml = '';
+    if (task.subtasks && task.subtasks.length) {
+      subtaskHtml = `<ul class="subtask-list">${task.subtasks.map(st =>
+        `<li class="subtask-item" data-subtask-id="${st.id}">
+          <input type="checkbox" class="subtask-checkbox" ${st.completed ? 'checked' : ''}>
+          <span class="subtask-title">${st.title}</span>
+          <div class="subtask-actions">
+            <button class="icon-btn edit-subtask-btn" title="编辑子任务">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="icon-btn delete-subtask-btn" title="删除子任务">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </li>`
+      ).join('')}</ul>`;
+    }
+
+    const addSubtaskHtml = `
+      <div class="add-subtask">
+        <input type="text" class="subtask-input" placeholder="添加子任务...">
+        <button class="icon-btn add-subtask-btn" title="添加子任务">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-        </button>
-        <button class="icon-btn delete-btn" title="删除">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </button>
       </div>
     `;
 
-    item.querySelector('.todo-title').textContent = task.title;
+    const isExpanded = expandedTaskIds.has(task.id);
+
+    item.innerHTML = `
+      <div class="todo-main">
+        <input type="checkbox" class="todo-checkbox" ${task.completed ? 'checked' : ''}>
+        <div class="todo-content">
+          <span class="todo-title">${task.title}</span>
+          ${tagsHtml}
+          ${metaHtml}
+        </div>
+        <div class="todo-actions">
+          <button class="icon-btn toggle-subtasks-btn" title="子任务">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <button class="icon-btn edit-btn" title="编辑">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="icon-btn delete-btn" title="删除">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="subtask-container" style="display:${isExpanded ? 'block' : 'none'};">
+        ${subtaskHtml}
+        ${addSubtaskHtml}
+      </div>
+    `;
+
     todoListEl.appendChild(item);
   });
 
@@ -260,22 +333,88 @@ function render() {
   completedSpan.textContent = completed;
 }
 
+function updateSortDisplay(value) {
+  const option = sortOptions.querySelector(`.option-item[data-value="${value}"]`);
+  if (option) {
+    sortSelectedText.textContent = option.textContent;
+    sortOptions.querySelectorAll('.option-item').forEach(item => item.classList.remove('active'));
+    option.classList.add('active');
+    currentSort = value;
+  }
+}
+
+function handleSortChange(value) {
+  updateSortDisplay(value);
+  render();
+  log(`排序方式切换为: ${value}`);
+}
+
+function initCustomSelect() {
+  sortTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    customSelect.classList.toggle('open');
+  });
+
+  sortOptions.addEventListener('click', (e) => {
+    const option = e.target.closest('.option-item');
+    if (!option) return;
+    const value = option.dataset.value;
+    if (!APP_CONFIG.dueDateEnabled && value === 'due-asc') {
+      showToast('截止日期功能已禁用', 'error');
+      customSelect.classList.remove('open');
+      return;
+    }
+    handleSortChange(value);
+    customSelect.classList.remove('open');
+  });
+
+  document.addEventListener('click', () => {
+    customSelect.classList.remove('open');
+  });
+
+  sortTrigger.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      customSelect.classList.toggle('open');
+    }
+    if (e.key === 'Escape') {
+      customSelect.classList.remove('open');
+    }
+  });
+}
+
 async function addTask() {
   const title = taskInput.value.trim();
   if (!title) return;
   const dueDate = APP_CONFIG.dueDateEnabled ? dueDateInput.value : '';
+
+  // 支持全角/半角逗号分隔标签和子任务
+  const tagsRaw = taskTagsInput.value.trim();
+  const tags = tagsRaw ? tagsRaw.split(/[，,]\s*/).filter(s => s !== '') : [];
+
+  const subtasksRaw = taskSubtasksInput.value.trim();
+  const subtaskTitles = subtasksRaw ? subtasksRaw.split(/[，,]\s*/).filter(s => s !== '') : [];
+  const subtasks = subtaskTitles.map(title => ({
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+    title,
+    completed: false
+  }));
 
   const newTask = {
     id: Date.now().toString(),
     title,
     completed: false,
     dueDate,
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    tags,
+    subtasks
   };
 
   tasks.push(newTask);
   taskInput.value = '';
   dueDateInput.value = '';
+  taskTagsInput.value = '';
+  taskSubtasksInput.value = '';
   await window.electronAPI.saveTodos(tasks);
   render();
   showToast('任务已成功添加');
@@ -284,6 +423,7 @@ async function addTask() {
 
 async function deleteTask(id) {
   tasks = tasks.filter(t => t.id !== id);
+  expandedTaskIds.delete(id);
   await window.electronAPI.saveTodos(tasks);
   render();
   showToast('任务已成功删除');
@@ -307,16 +447,20 @@ function openEditModal(task) {
   editingTaskId = task.id;
   editTitle.value = task.title;
   editDueDate.value = task.dueDate || '';
+  editTags.value = (task.tags || []).join(', ');
   editModal.showModal();
 }
 
 async function saveEdit() {
   const title = editTitle.value.trim();
   if (!title) return;
+  // 支持全角/半角逗号
+  const tags = editTags.value.split(/[，,]\s*/).filter(s => s !== '');
 
   const task = tasks.find(t => t.id === editingTaskId);
   if (task) {
     task.title = title;
+    task.tags = tags;
     if (APP_CONFIG.dueDateEnabled) {
       task.dueDate = editDueDate.value;
     }
@@ -324,7 +468,7 @@ async function saveEdit() {
     render();
     editModal.close();
     showToast('任务更新成功');
-    log(`编辑任务: ${editingTaskId} -> ${title}`);
+    log(`编辑任务: ${editingTaskId}`);
   }
 }
 
@@ -336,7 +480,9 @@ async function clearCompleted() {
   }
   const confirm = await showConfirmDialog(`确定要清除这 ${completedCount} 个已完成的任务吗？`);
   if (confirm) {
+    const toRemove = tasks.filter(t => t.completed).map(t => t.id);
     tasks = tasks.filter(t => !t.completed);
+    toRemove.forEach(id => expandedTaskIds.delete(id));
     await window.electronAPI.saveTodos(tasks);
     render();
     showToast('已完成任务清理完毕');
@@ -356,11 +502,6 @@ function setFilter(filter) {
   render();
 }
 
-function onSortChange(e) {
-  currentSort = e.target.value;
-  render();
-}
-
 async function exportData() {
   const res = await window.electronAPI.exportTodos(tasks);
   if (res.success) {
@@ -374,7 +515,12 @@ async function exportData() {
 async function importData() {
   const res = await window.electronAPI.importTodos();
   if (res.success && res.data) {
-    tasks = res.data;
+    tasks = res.data.map(t => ({
+      ...t,
+      tags: t.tags || [],
+      subtasks: t.subtasks || []
+    }));
+    expandedTaskIds.clear();
     await window.electronAPI.saveTodos(tasks);
     render();
     showToast('外部数据导入成功');
@@ -399,12 +545,12 @@ function styleSpin() {
 
 document.addEventListener('DOMContentLoaded', () => {
   init();
+  initCustomSelect();
 
   addBtn.addEventListener('click', addTask);
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
   if (dueDateInput) dueDateInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
   clearCompletedBtn.addEventListener('click', clearCompleted);
-  sortSelect.addEventListener('change', onSortChange);
   exportBtn?.addEventListener('click', exportData);
   filterBtns.forEach(btn => btn.addEventListener('click', () => setFilter(btn.getAttribute('data-filter'))));
 
@@ -412,18 +558,157 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = e.target.closest('.todo-item');
     if (!item) return;
     const id = item.getAttribute('data-id');
+
     if (e.target.closest('.edit-btn')) {
       const task = tasks.find(t => t.id === id);
       if (task) openEditModal(task);
-    } else if (e.target.closest('.delete-btn')) await deleteTask(id);
+      return;
+    }
+    if (e.target.closest('.delete-btn')) {
+      await deleteTask(id);
+      return;
+    }
+    if (e.target.closest('.toggle-subtasks-btn')) {
+      if (expandedTaskIds.has(id)) {
+        expandedTaskIds.delete(id);
+      } else {
+        expandedTaskIds.add(id);
+      }
+      render();
+      return;
+    }
+    if (e.target.closest('.add-subtask-btn')) {
+      const container = item.querySelector('.subtask-container');
+      const input = container.querySelector('.subtask-input');
+      const title = input.value.trim();
+      if (!title) return;
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.subtasks.push({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+          title,
+          completed: false
+        });
+        expandedTaskIds.add(id);
+        await window.electronAPI.saveTodos(tasks);
+        render();
+      }
+      return;
+    }
+    if (e.target.closest('.delete-subtask-btn')) {
+      const subtaskItem = e.target.closest('.subtask-item');
+      const subtaskId = subtaskItem.dataset.subtaskId;
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.subtasks = task.subtasks.filter(st => st.id !== subtaskId);
+        await window.electronAPI.saveTodos(tasks);
+        render();
+      }
+      return;
+    }
+
+    // 编辑子任务
+    if (e.target.closest('.edit-subtask-btn')) {
+      const subtaskItem = e.target.closest('.subtask-item');
+      if (!subtaskItem) return;
+      const subtaskId = subtaskItem.dataset.subtaskId;
+      const taskItem = subtaskItem.closest('.todo-item');
+      const taskId = taskItem.dataset.id;
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const subtask = task.subtasks.find(st => st.id === subtaskId);
+      if (!subtask) return;
+
+      // 取消其他正在编辑的输入框
+      const existingInput = document.querySelector('.subtask-edit-input');
+      if (existingInput) {
+        const original = existingInput.dataset.originalText || '';
+        const span = document.createElement('span');
+        span.className = 'subtask-title';
+        span.textContent = original;
+        existingInput.replaceWith(span);
+      }
+
+      const titleSpan = subtaskItem.querySelector('.subtask-title');
+      const originalText = titleSpan.textContent;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'subtask-edit-input';
+      input.value = originalText;
+      input.dataset.originalText = originalText;
+      titleSpan.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const saveEdit = () => {
+        input.removeEventListener('blur', saveEdit);
+        if (input.dataset.saving) return;
+        input.dataset.saving = 'true';
+        const newText = input.value.trim();
+        if (newText && newText !== originalText) {
+          subtask.title = newText;
+          window.electronAPI.saveTodos(tasks);
+          render();
+        } else {
+          const newSpan = document.createElement('span');
+          newSpan.className = 'subtask-title';
+          newSpan.textContent = originalText;
+          input.replaceWith(newSpan);
+        }
+      };
+
+      const cancelEdit = () => {
+        input.removeEventListener('blur', saveEdit);
+        const newSpan = document.createElement('span');
+        newSpan.className = 'subtask-title';
+        newSpan.textContent = originalText;
+        input.replaceWith(newSpan);
+      };
+
+      input.addEventListener('blur', saveEdit);
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          input.blur();
+        } else if (ev.key === 'Escape') {
+          ev.preventDefault();
+          cancelEdit();
+        }
+      });
+      return;
+    }
   });
+
   todoListEl.addEventListener('change', async (e) => {
+    if (e.target.classList.contains('subtask-checkbox')) {
+      const item = e.target.closest('.todo-item');
+      const taskId = item.dataset.id;
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const subtaskItem = e.target.closest('.subtask-item');
+      const subtaskId = subtaskItem.dataset.subtaskId;
+      const subtask = task.subtasks.find(st => st.id === subtaskId);
+      if (subtask) {
+        subtask.completed = e.target.checked;
+        await window.electronAPI.saveTodos(tasks);
+        render();
+      }
+      return;
+    }
     if (e.target.classList.contains('todo-checkbox')) {
       const item = e.target.closest('.todo-item');
       const id = item.getAttribute('data-id');
       await toggleComplete(id, e.target.checked);
     }
   });
+
+  todoListEl.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && e.target.classList.contains('subtask-input')) {
+      const addBtn = e.target.closest('.subtask-container').querySelector('.add-subtask-btn');
+      if (addBtn) addBtn.click();
+    }
+  });
+
   saveEditBtn.addEventListener('click', saveEdit);
   closeModalBtn.addEventListener('click', () => editModal.close());
 
@@ -457,11 +742,9 @@ document.addEventListener('DOMContentLoaded', () => {
     log(`截止日期功能: ${APP_CONFIG.dueDateEnabled ? '启用' : '禁用'}`);
   });
 
-  // 原有代码片段（在 DOMContentLoaded 中）
   debugModeToggle.addEventListener('change', (e) => {
     APP_CONFIG.debugMode = e.target.checked;
     saveConfig();
-    // 通知主进程更新调试状态
     if (window.electronAPI && window.electronAPI.setDebugMode) {
       window.electronAPI.setDebugMode(APP_CONFIG.debugMode);
     }
@@ -491,6 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirm = await showConfirmDialog('确认删除所有的任务数据吗？此操作无法撤销！', 'danger');
     if (confirm) {
       tasks = [];
+      expandedTaskIds.clear();
       await window.electronAPI.saveTodos(tasks);
       render();
       showToast('所有本地存储已被重置清空', 'error');
@@ -505,6 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('todo_due_enabled');
       localStorage.removeItem('todo_debug_mode');
       loadConfig();
+      updateSortDisplay(currentSort);
       render();
       showToast('设置偏好已恢复默认');
       log('重置设置');

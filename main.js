@@ -35,7 +35,6 @@ function saveConfig(config) {
 }
 
 // ---------- 日志系统 ----------
-// 日志文件放在应用当前工作目录下的 logs 文件夹
 const logDir = path.join(process.cwd(), 'logs');
 const logFilePath = path.join(logDir, 'app.log');
 
@@ -49,7 +48,6 @@ function ensureLogDir() {
 }
 
 function logMessage(level, ...args) {
-  // 当 debug 模式开启时，忽略级别过滤，记录所有日志
   const shouldLog = debugEnabled || (LOG_LEVELS[level] >= LOG_LEVELS[logLevel]);
   if (!shouldLog) return;
 
@@ -62,7 +60,6 @@ function logMessage(level, ...args) {
   fsSync.appendFile(logFilePath, entry, { encoding: 'utf8' }, (err) => {
     if (err) console.error('写入日志失败:', err);
   });
-  // 若命令行带 --debug 或 debugEnabled 为 true，输出到控制台
   if (process.argv.includes('--debug') || debugEnabled) {
     console.log(`[${level}]`, ...args);
   }
@@ -101,10 +98,8 @@ function createWindow() {
   app.setAppUserModelId('com.junloye.todolist');
 
   const win = new BrowserWindow({
-    width: 900,
-    height: 700,
-    minWidth: 700,
-    minHeight: 550,
+    width: 1100,
+    height: 750,
     frame: true,
     backgroundColor: '#ffffff',
     webPreferences: {
@@ -127,7 +122,6 @@ function createWindow() {
 // ---------- 应用生命周期 ----------
 app.whenReady().then(async () => {
   loadConfig();
-  // 若配置中 debug 开启，则同步日志级别
   if (debugEnabled) {
     logLevel = 'debug';
     saveConfig({ debugEnabled, logLevel });
@@ -261,16 +255,25 @@ ipcMain.handle('config:setLogLevel', (event, level) => {
   return { success: false, error: '无效的日志级别' };
 });
 
-// 新增：设置调试模式，同时自动调整日志级别为 debug
 ipcMain.handle('config:setDebug', (event, enabled) => {
   debugEnabled = enabled;
   if (enabled) {
     logLevel = 'debug';
   } else {
-    // 若关闭调试，恢复为 info（可优化为保持之前设置的级别，但这里简单处理）
     logLevel = 'info';
   }
   saveConfig({ debugEnabled, logLevel });
   logMessage('info', `调试模式已${enabled ? '启用' : '禁用'}，日志级别自动设为 ${logLevel}`);
   return { success: true };
+});
+
+ipcMain.handle('devtools:open', () => {
+  if (mainWindow) {
+    mainWindow.webContents.openDevTools();
+  }
+});
+ipcMain.handle('devtools:close', () => {
+  if (mainWindow) {
+    mainWindow.webContents.closeDevTools();
+  }
 });
