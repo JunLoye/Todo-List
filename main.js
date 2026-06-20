@@ -105,6 +105,8 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1100,
     height: 750,
+    minWidth: 800,
+    minHeight: 550,
     frame: true,
     backgroundColor: '#ffffff',
     webPreferences: {
