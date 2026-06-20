@@ -52,7 +52,7 @@ const dialogCancelBtn = document.getElementById('dialogCancelBtn');
 const dialogIconPath = document.getElementById('dialogIconPath');
 const toastContainer = document.getElementById('toastContainer');
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 let tasks = [];
 let currentFilter = 'all';
 let currentSort = 'create-desc';
@@ -377,7 +377,12 @@ function showToast(message, type = 'success') {
   if (type === 'error') {
     icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
   }
-  toast.innerHTML = `${icon}<span>${message}</span>`;
+
+  toast.insertAdjacentHTML('beforeend', icon);
+  const messageEl = document.createElement('span');
+  messageEl.textContent = String(message);
+  toast.appendChild(messageEl);
+
   toastContainer.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
