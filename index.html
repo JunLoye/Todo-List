@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8"/>
+    <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net"/>
@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="statics/css/todo.css"/>
   <link rel="stylesheet" href="statics/css/components.css"/>
   <link rel="stylesheet" href="statics/css/settings.css"/>
+  <link rel="stylesheet" href="statics/css/spring-festival.css"/>
+  <link rel="stylesheet" href="statics/css/christmas.css"/>
 </head>
 
 <body>
@@ -213,8 +215,11 @@
                   <button class="theme-btn" data-theme="pink" title="粉色">
                     <span class="theme-dot" style="background: #d81b60;"></span>
                   </button>
-                  <button class="theme-btn" data-theme="yellow" title="黄色">
-                    <span class="theme-dot" style="background: #f6d91f;"></span>
+                  <button class="theme-btn" data-theme="christmas" title="圣诞">
+                    <span class="theme-dot" style="background: linear-gradient(135deg,#b71c1c 40%, #2e7d32 60%);"></span>
+                  </button>
+                  <button class="theme-btn" data-theme="spring-festival" title="春节（已禁用）" disabled>
+                    <span class="theme-dot" style="background: linear-gradient(135deg,#C1121F 40%, #FFD166 60%);"></span>
                   </button>
                 </div>
               </div>
@@ -226,6 +231,17 @@
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" id="dueDateEnableToggle"/>
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-item">
+                <div class="settings-info">
+                  <span class="settings-title">紧凑模式</span>
+                  <span class="settings-desc">缩小元素间距和内边距，使界面更紧凑</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="compactModeToggle"/>
                   <span class="slider"></span>
                 </label>
               </div>

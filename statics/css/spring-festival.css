@@ -1,0 +1,176 @@
+/* 春节主题样式：分层颜色 + SVG 背景 */
+:root {
+  --sf-accent-1: #C1121F; /* 主红 */
+  --sf-accent-2: #E63946; /* 次红 */
+  --sf-gold: #FFD166;    /* 金色 */
+  --sf-bg-grad-start: #FFF3EE;
+  --sf-bg-grad-mid: #FFE3D9;
+  --sf-bg-grad-end: #FFD4C2;
+  --sf-accent-3: #8B2E2E; /* 深红 */
+  --sf-green: #2E7D32; /* 辅助绿 */
+}
+
+.sf-banner {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--sf-bg-grad-start), var(--sf-bg-grad-end));
+  border-radius: 10px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background-image: radial-gradient(circle at 10% 10%, rgba(255,209,102,0.06), transparent 6%), linear-gradient(90deg, var(--sf-bg-grad-start), var(--sf-bg-grad-end));
+}
+
+.sf-banner .sf-art {
+  width: 360px;
+  max-width: 45%;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+/* 小幅度飘动动画（用于灯笼等装饰） */
+@keyframes floatY {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+.sf-banner .sf-text {
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+.sf-banner h2 {
+  margin: 0 0 6px 0;
+  font-size: 28px;
+  color: var(--sf-accent-1);
+}
+.sf-banner p {
+  margin: 0;
+  color: rgba(255,255,255,0.95);
+}
+
+/* 分层装饰，用伪元素制造金色光斑 */
+.sf-banner::after {
+  content: "";
+  position: absolute;
+  right: -60px;
+  top: -30px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,209,102,0.35), transparent 40%);
+  pointer-events: none;
+}
+
+/* Lantern SVG 装饰：插入在 banner 右侧并轻微浮动 */
+.sf-banner .sf-art-lantern {
+  width: 120px;
+  height: 140px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 140'><g fill='none' fill-rule='evenodd'><ellipse cx='60' cy='46' rx='38' ry='36' fill='%23C1121F'/><path d='M22 46c8-20 32-20 38-20s30 0 38 20v48c-8 20-32 20-38 20s-30 0-38-20V46z' fill='%23E63946' fill-opacity='0.95'/><rect x='56' y='92' width='8' height='20' rx='3' fill='%238B2E2E'/><g transform='translate(14,18)'><circle cx='6' cy='8' r='4' fill='%23FFD166'/></g></g></svg>");
+  background-size: contain;
+  background-repeat: no-repeat;
+  animation: floatY 4s ease-in-out infinite;
+  flex: 0 0 auto;
+}
+
+/* 小屏适配 */
+@media (max-width: 800px) {
+  .sf-banner { flex-direction: column; gap: 12px; }
+  .sf-banner .sf-art { max-width: 100%; }
+}
+
+/* Theme decorations when theme is active (与 christmas.css 对齐的位置) */
+body[data-theme="spring-festival"] {
+  background: linear-gradient(180deg, var(--sf-bg-grad-start) 0%, var(--sf-bg-grad-mid) 60%, var(--sf-bg-grad-end) 100%);
+  color-scheme: light;
+}
+
+.app {
+  position: relative;
+  overflow: visible;
+}
+
+/* 顶部挂饰（重复 SVG 灯笼/梅花） */
+.app::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='72' viewBox='0 0 240 72'><g fill='none'><rect width='240' height='72' fill='transparent'/><g transform='translate(8,8)'><ellipse cx='24' cy='28' rx='14' ry='18' fill='%23C1121F'/><circle cx='72' cy='28' r='8' fill='%23FFD166'/><ellipse cx='120' cy='28' rx='14' ry='18' fill='%23E63946'/><circle cx='168' cy='28' r='8' fill='%23FFD166'/><ellipse cx='216' cy='28' rx='14' ry='18' fill='%23C1121F'/></g></g></svg>");
+  background-repeat: repeat-x;
+  background-position: center top;
+  opacity: 0.95;
+  z-index: 4;
+}
+
+/* 内容区轻微花纹叠层 */
+.main-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(rgba(255,200,200,0.6) 1px, transparent 1px), radial-gradient(rgba(255,230,200,0.6) 1px, transparent 1px);
+  background-size: 40px 40px, 60px 60px;
+  background-position: 10px 10px, 30px 30px;
+  pointer-events: none;
+  opacity: 0.22;
+  z-index: 2;
+}
+
+/* 侧边栏顶部增加梅花与烟花小图标，使用 SVG data-uri */
+.sidebar::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  right: 8px;
+  width: 96px;
+  height: 48px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 48'><g fill='none' fill-rule='evenodd'><path d='M8 24c8-10 20-10 28-4 8-6 20-6 28 4 0 0-12 10-28 10S8 24 8 24z' fill='%23E63946'/><g transform='translate(64,4)'><circle cx='8' cy='8' r='4' fill='%23FFD166'/></g></g></svg>");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* 侧边栏小徽章 */
+.sidebar::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 48px;
+  height: 48px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g><circle cx='20' cy='36' r='8' fill='%23C1121F'/><path d='M8 42c8-14 26-14 34-6 2-6-8-18-22-10-10 6-20 6-12 16z' fill='%23E63946'/><circle cx='44' cy='24' r='6' fill='%23FFD166'/></g></svg>");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.95;
+  z-index: 6;
+}
+
+/* Ensure decorations don't overlap interactive elements awkwardly */
+body[data-theme="spring-festival"] .sidebar,
+body[data-theme="spring-festival"] .app-header {
+  position: relative;
+  z-index: 3;
+}
+
+body[data-theme="spring-festival"] .todo-item {
+  border-color: rgba(193,18,31,0.06);
+}
+
+/* 高亮重要按钮使用金色描边 */
+body[data-theme="spring-festival"] .primary-btn {
+  box-shadow: 0 2px 0 rgba(0,0,0,0.04), 0 0 0 3px rgba(255,209,102,0.06) inset;
+  border: 1px solid rgba(255,209,102,0.15);
+}
+
+/* 在主题激活时为主题点添加光晕 */
+.theme-dot[style*="C1121F"], .theme-dot[style*="C1121F"] + .theme-dot {
+  box-shadow: 0 0 0 6px rgba(193,18,31,0.06);
+}

@@ -18,6 +18,7 @@ const includeTodayToggle = document.getElementById('includeTodayToggle');
 
 const themeBtns = document.querySelectorAll('.theme-btn');
 const dueDateEnableToggle = document.getElementById('dueDateEnableToggle');
+const compactModeToggle = document.getElementById('compactModeToggle');
 const debugModeToggle = document.getElementById('debugModeToggle');
 const importDataBtn = document.getElementById('importDataBtn');
 const exportDataBtn = document.getElementById('exportDataBtn');
@@ -82,8 +83,8 @@ let expandedTaskIds = new Set();
 const APP_CONFIG = {
   theme: 'light',
   dueDateEnabled: true,
-  debugMode: false
-  ,
+  debugMode: false,
+  compactMode: false,
   dueThreshold: 3,
   dueCountToday: true
 };
@@ -984,7 +985,7 @@ function styleSpin() {
 
 function loadConfig() {
   let theme = localStorage.getItem('todo_theme') || 'light';
-  const validThemes = ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'pink', 'yellow'];
+  const validThemes = ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'pink', 'christmas'];
   if (!validThemes.includes(theme)) {
     theme = 'light';
   }
@@ -1012,6 +1013,11 @@ function loadConfig() {
   APP_CONFIG.dueCountToday = savedCountToday !== null ? savedCountToday === 'true' : APP_CONFIG.dueCountToday;
   if (includeTodayToggle) includeTodayToggle.checked = APP_CONFIG.dueCountToday;
 
+  const savedCompact = localStorage.getItem('todo_compact_mode');
+  APP_CONFIG.compactMode = savedCompact !== null ? savedCompact === 'true' : false;
+  compactModeToggle.checked = APP_CONFIG.compactMode;
+  document.body.setAttribute('data-compact', APP_CONFIG.compactMode ? 'true' : 'false');
+
   const savedLevel = localStorage.getItem('todo_log_level') || 'info';
   if (window.logLevelSelect) {
     window.logLevelSelect.setValue(savedLevel, false);
@@ -1022,6 +1028,7 @@ function saveConfig() {
   localStorage.setItem('todo_theme', APP_CONFIG.theme);
   localStorage.setItem('todo_due_enabled', APP_CONFIG.dueDateEnabled);
   localStorage.setItem('todo_debug_mode', APP_CONFIG.debugMode);
+  localStorage.setItem('todo_compact_mode', String(APP_CONFIG.compactMode));
   localStorage.setItem('todo_due_threshold', String(APP_CONFIG.dueThreshold));
   localStorage.setItem('todo_due_count_today', String(APP_CONFIG.dueCountToday));
 }
@@ -1388,6 +1395,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   themeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       const newTheme = btn.dataset.theme;
       if (APP_CONFIG.theme === newTheme) return;
 
@@ -1408,6 +1416,13 @@ document.addEventListener('DOMContentLoaded', () => {
     applyDueDateFeatureState();
     render();
     log(`截止日期功能: ${APP_CONFIG.dueDateEnabled ? '启用' : '禁用'}`);
+  });
+
+  compactModeToggle.addEventListener('change', (e) => {
+    APP_CONFIG.compactMode = e.target.checked;
+    document.body.setAttribute('data-compact', APP_CONFIG.compactMode ? 'true' : 'false');
+    saveConfig();
+    log(`紧凑模式: ${APP_CONFIG.compactMode ? '启用' : '禁用'}`);
   });
 
   debugModeToggle.addEventListener('change', (e) => {
@@ -1460,9 +1475,10 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('todo_theme');
       localStorage.removeItem('todo_due_enabled');
       localStorage.removeItem('todo_debug_mode');
+      localStorage.removeItem('todo_compact_mode');
       localStorage.removeItem('todo_log_level');
-        localStorage.removeItem('todo_due_threshold');
-        localStorage.removeItem('todo_due_count_today');
+      localStorage.removeItem('todo_due_threshold');
+      localStorage.removeItem('todo_due_count_today');
       loadConfig();
       if (window.logLevelSelect) {
         window.logLevelSelect.setValue('info', false);

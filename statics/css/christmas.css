@@ -1,0 +1,69 @@
+/* Christmas theme decorations (SVG-based) */
+body[data-theme="christmas"] {
+  background: linear-gradient(180deg, #fffdf7 0%, #f7fff9 100%);
+}
+
+.app {
+  position: relative;
+  overflow: visible;
+}
+
+/* Garland across the top (repeating SVG ornaments) */
+.app::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='72' viewBox='0 0 240 72'><g fill='none'><rect width='240' height='72' fill='transparent'/><g transform='translate(0,8)'><circle cx='24' cy='28' r='10' fill='%23b71c1c'/><circle cx='72' cy='28' r='10' fill='%232e7d32'/><circle cx='120' cy='28' r='10' fill='%23b71c1c'/><circle cx='168' cy='28' r='10' fill='%232e7d32'/><circle cx='216' cy='28' r='10' fill='%23b71c1c'/></g></g></svg>");
+  background-repeat: repeat-x;
+  background-position: center top;
+  opacity: 0.95;
+  mix-blend-mode: normal;
+  z-index: 4;
+}
+
+/* Snowfall subtle overlay in content area */
+.main-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1px), radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px);
+  background-size: 40px 40px, 60px 60px;
+  background-position: 10px 10px, 30px 30px;
+  pointer-events: none;
+  opacity: 0.22;
+  z-index: 2;
+}
+
+/* Small holly badge on sidebar */
+.sidebar::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 48px;
+  height: 48px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g><circle cx='20' cy='36' r='8' fill='%23b71c1c'/><circle cx='36' cy='28' r='8' fill='%23b71c1c'/><path d='M8 42c8-14 26-14 34-6 2-6-8-18-22-10-10 6-20 6-12 16z' fill='%232e7d32'/></g></svg>");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.95;
+  z-index: 6;
+}
+
+/* Ensure decorations don't overlap interactive elements awkwardly */
+body[data-theme="christmas"] .sidebar,
+body[data-theme="christmas"] .app-header {
+  position: relative;
+  z-index: 3;
+}
+
+/* Slight card accent for christmas */
+body[data-theme="christmas"] .todo-item {
+  border-color: rgba(183,28,28,0.06);
+}

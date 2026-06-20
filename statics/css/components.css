@@ -117,24 +117,28 @@
 }
 
 .danger-btn {
-  background: transparent;
+  background: var(--danger-color);
   border: 1px solid var(--danger-color);
-  color: var(--danger-color);
+  color: #fff;
   padding: 8px 12px;
-  border-radius: 40px;
+  border-radius: 8px;
   font-size: 0.85rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: 0.1s;
+  transition: all 0.2s ease;
 }
 .danger-btn:hover {
-  background: var(--danger-hover-bg);
-  border-color: var(--danger-color);
-  opacity: 0.8;
-  box-shadow: 0 6px 18px rgba(210, 47, 47, 0.12);
+  background: #b71c1c;
+  border-color: #b71c1c;
+  box-shadow: 0 6px 18px rgba(210, 47, 47, 0.15);
+  transform: translateY(-1px);
+}
+.danger-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .about-info {
@@ -205,6 +209,35 @@
 }
 .theme-btn[data-theme="light"].active .theme-dot {
   border-color: var(--text-primary);
+}
+
+.theme-btn[data-theme="christmas"] .theme-dot {
+  background: linear-gradient(135deg, #b71c1c 40%, #2e7d32 60%);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.theme-btn[data-theme="christmas"].active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--text-primary);
+}
+
+.theme-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  border-style: dashed;
+  position: relative;
+}
+.theme-btn:disabled:hover {
+  transform: none;
+  border-color: var(--border-color);
+}
+.theme-btn:disabled::after {
+  content: "禁用";
+  position: absolute;
+  font-size: 8px;
+  color: var(--text-secondary);
+  bottom: -2px;
+  white-space: nowrap;
 }
 
 .toggle-switch {

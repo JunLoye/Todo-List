@@ -41,7 +41,7 @@
   background: var(--bg-sidebar);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
 }
 .settings-item {
   display: flex;
@@ -139,6 +139,18 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpolyline points='2 4 6 8 10 4' stroke='%23aaa' stroke-width='2' fill='none'/%3E%3C/svg%3E");
 }
 
+[data-theme="dark"] #resetSettingsBtn,
+[data-theme="dark"] #deleteAllDataBtn {
+  color: #fff;
+  background: #c62828;
+  border-color: #c62828;
+}
+[data-theme="dark"] #resetSettingsBtn:hover,
+[data-theme="dark"] #deleteAllDataBtn:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+}
+
 .content-area {
   position: relative;
   overflow: hidden;
@@ -180,4 +192,95 @@
 #checkUpdateBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+#resetSettingsBtn,
+#deleteAllDataBtn {
+  color: #fff;
+  background: #d32f2f;
+  border-color: #d32f2f;
+}
+#resetSettingsBtn:hover,
+#deleteAllDataBtn:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+}
+
+/* ========== 紧凑模式 ========== */
+[data-compact="true"] .settings-header {
+  gap: 12px;
+  margin-bottom: 16px;
+}
+[data-compact="true"] .settings-header h2 {
+  font-size: 1.1rem;
+}
+
+[data-compact="true"] .settings-section {
+  margin-bottom: 18px;
+}
+[data-compact="true"] .settings-section h3 {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+[data-compact="true"] .settings-list {
+  border-radius: 8px;
+}
+
+[data-compact="true"] .settings-item {
+  padding: var(--compact-settings-padding);
+}
+
+[data-compact="true"] .settings-title {
+  font-size: 0.85rem;
+}
+[data-compact="true"] .settings-desc {
+  font-size: 0.72rem;
+}
+
+[data-compact="true"] .settings-item select {
+  padding: 5px 28px 5px 8px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+}
+
+[data-compact="true"] .settings-control {
+  gap: 6px;
+}
+[data-compact="true"] .settings-control .settings-number {
+  width: 68px;
+  padding: 5px 8px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+}
+
+[data-compact="true"] .settings-entry-btn {
+  padding: 7px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+}
+
+[data-compact="true"] .theme-btn {
+  width: 28px;
+  height: 28px;
+}
+[data-compact="true"] .theme-dot {
+  width: 18px;
+  height: 18px;
+}
+
+[data-compact="true"] .toggle-switch {
+  transform: scale(0.85);
+  transform-origin: right center;
+}
+
+[data-compact="true"] .about-info {
+  padding: 12px;
+  border-radius: 14px;
+}
+
+[data-compact="true"] .danger-btn {
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  border-radius: 6px;
 }

@@ -67,11 +67,12 @@
     font-size: 0.9rem;
     color: var(--text-primary);
     cursor: pointer;
-    transition: 0.15s;
+    transition: all 0.2s ease;
   }
   
   .filter-btn:hover {
     background: var(--btn-secondary-hover-bg);
+    transform: translateX(2px);
   }
   
   .filter-btn.active {
@@ -97,11 +98,13 @@
     justify-content: center;
     gap: 8px;
     font-size: 0.9rem;
-    transition: 0.15s;
+    transition: all 0.2s ease;
   }
   
   .settings-entry-btn:hover {
     background: var(--btn-secondary-hover-bg);
+    border-color: var(--text-secondary);
+    transform: translateY(-1px);
   }
 
   .filter-btn {
@@ -123,3 +126,54 @@
     background: var(--filter-active-color);
     color: var(--filter-active-bg);
   }
+
+/* ========== 紧凑模式 ========== */
+[data-compact="true"] .sidebar {
+  padding: 16px 12px;
+  gap: 16px;
+  width: 230px;
+}
+
+[data-compact="true"] .sidebar .search-wrapper input {
+  padding: var(--compact-input-padding);
+  border-radius: var(--compact-input-radius);
+  font-size: var(--compact-font-size);
+}
+
+[data-compact="true"] .sidebar .tag-filter-bar {
+  gap: 6px;
+}
+[data-compact="true"] .sidebar .tag-filter-bar .tag-filter-chip {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+[data-compact="true"] .filter-btn {
+  padding: 7px 10px;
+  font-size: var(--compact-font-size);
+  border-radius: 6px;
+}
+
+[data-compact="true"] .filter-count {
+  font-size: 0.68rem;
+  padding: 0 6px;
+  min-width: 18px;
+  line-height: 1.5;
+}
+
+[data-compact="true"] .stat-card {
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+[data-compact="true"] .stat-label {
+  font-size: 0.82rem;
+}
+[data-compact="true"] .stat-value {
+  font-size: 1rem;
+}
+
+[data-compact="true"] .sidebar .settings-entry-btn {
+  padding: 7px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+}

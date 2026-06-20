@@ -326,13 +326,19 @@ select:focus {
 	font-size: 0.95rem;
 	font-weight: 500;
 	cursor: pointer;
-	transition: background 0.15s;
+	transition: all 0.2s ease;
 	white-space: nowrap;
 }
 
 .primary-btn:hover {
 	background: var(--btn-primary-hover);
 	box-shadow: 0 8px 20px rgba(2,6,23,0.08);
+	transform: translateY(-1px);
+}
+
+.primary-btn:active {
+	transform: translateY(0);
+	box-shadow: none;
 }
 
 .secondary-btn {
@@ -343,12 +349,19 @@ select:focus {
 	border-radius: 8px;
 	font-size: 0.9rem;
 	cursor: pointer;
-	transition: 0.15s;
+	transition: all 0.2s ease;
 }
 
 .secondary-btn:hover {
 	background: var(--btn-secondary-hover-bg);
+	border-color: var(--text-secondary);
 	box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+	transform: translateY(-1px);
+}
+
+.secondary-btn:active {
+	transform: translateY(0);
+	box-shadow: none;
 }
 
 .todo-list-container {
@@ -476,12 +489,17 @@ select:focus {
 	display: grid;
 	place-content: center;
 	color: var(--text-secondary);
-	transition: 0.15s;
+	transition: all 0.2s ease;
 }
 
 .icon-btn:hover {
 	background: var(--btn-secondary-hover-bg);
 	color: var(--text-primary);
+	transform: scale(1.1);
+}
+
+.icon-btn:active {
+	transform: scale(0.95);
 }
 
 .icon-btn.delete-btn:hover {
@@ -952,4 +970,162 @@ select#logLevelSelect {
 
 .custom-select .option-item:last-of-type {
   margin-bottom: 4px;
+}
+
+/* ========== 紧凑模式 ========== */
+[data-compact="true"] .todo-item {
+  padding: var(--compact-todo-padding);
+  border-radius: var(--compact-todo-radius);
+  border-left-width: var(--compact-todo-border-left);
+}
+
+[data-compact="true"] .todo-list {
+  gap: var(--compact-todo-gap);
+}
+
+[data-compact="true"] .todo-main {
+  gap: 8px;
+}
+
+[data-compact="true"] .todo-checkbox {
+  width: var(--compact-checkbox-size);
+  height: var(--compact-checkbox-size);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+[data-compact="true"] .todo-checkbox:checked::before {
+  width: 8px;
+  height: 5px;
+}
+
+[data-compact="true"] .todo-title {
+  font-size: var(--compact-font-size);
+}
+
+[data-compact="true"] .todo-meta {
+  font-size: 0.75rem;
+  gap: 4px;
+}
+
+[data-compact="true"] .icon-btn {
+  width: var(--compact-icon-size);
+  height: var(--compact-icon-size);
+  border-radius: 4px;
+}
+
+[data-compact="true"] .todo-actions {
+  gap: 2px;
+}
+
+[data-compact="true"] input[type="text"],
+[data-compact="true"] input[type="date"],
+[data-compact="true"] select {
+  padding: var(--compact-input-padding);
+  border-radius: var(--compact-input-radius);
+  font-size: var(--compact-font-size);
+}
+
+[data-compact="true"] .input-extras input {
+  padding: 6px 10px;
+  border-radius: var(--compact-input-radius);
+  font-size: var(--compact-font-size);
+}
+
+[data-compact="true"] .input-section {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+[data-compact="true"] .input-extras {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+[data-compact="true"] .toolbar {
+  margin-bottom: 10px;
+}
+
+[data-compact="true"] .primary-btn {
+  padding: var(--compact-btn-padding);
+  border-radius: var(--compact-btn-radius);
+  font-size: var(--compact-font-size);
+}
+
+[data-compact="true"] .secondary-btn {
+  padding: 5px 10px;
+  border-radius: var(--compact-btn-radius);
+  font-size: var(--compact-font-size);
+}
+
+[data-compact="true"] .select-trigger {
+  padding: 5px 10px;
+  border-radius: var(--compact-btn-radius);
+  font-size: var(--compact-font-size);
+}
+
+[data-compact="true"] .date-picker-wrapper {
+  border-radius: var(--compact-input-radius);
+  height: 36px;
+  min-width: 180px;
+  width: 180px;
+}
+[data-compact="true"] .date-picker-wrapper input {
+  font-size: var(--compact-font-size);
+  padding-right: 44px;
+}
+[data-compact="true"] .date-picker-wrapper .icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 0 var(--compact-input-radius) var(--compact-input-radius) 0;
+}
+
+[data-compact="true"] .tag {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+}
+
+[data-compact="true"] .subtask-container {
+  padding-left: 28px;
+  margin-top: 4px;
+  padding-top: 4px;
+}
+[data-compact="true"] .subtask-item {
+  padding: 2px 0;
+  font-size: var(--compact-font-size);
+}
+[data-compact="true"] .subtask-input {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+[data-compact="true"] .view-panel {
+  padding: 16px;
+}
+
+[data-compact="true"] .todo-list-container {
+  padding-right: 2px;
+}
+
+[data-compact="true"] .priority-label {
+  font-size: 0.65rem;
+  padding: 0px 6px;
+}
+
+[data-compact="true"] .tag-filter-chip {
+  padding: 3px 8px;
+  font-size: 0.78rem;
+}
+
+[data-compact="true"] .search-wrapper {
+  gap: 4px;
+}
+[data-compact="true"] #clearSearchBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+[data-compact="true"] .select-options .option-item {
+  padding: 5px 10px;
+  font-size: var(--compact-font-size);
 }
