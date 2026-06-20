@@ -11,8 +11,7 @@
   "author": "Jun Loye",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^42.4.1",
-    "electron-builder": "^26.15.3"
+    "electron": "^42.4.1"
   },
   "build": {
     "appId": "com.junloye.todolist",
@@ -44,5 +43,7 @@
       "!assets/icon.ico"
     ],
     "extraResources": []
+  },
+  "dependencies": {
   }
 }

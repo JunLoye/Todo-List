@@ -32,15 +32,20 @@ function saveConfig(config) {
   }
 }
 
-const logDir = path.join(process.cwd(), 'logs');
-const logFilePath = path.join(logDir, 'app.log');
+// 保存日志到当前工作目录下的 app.log（避免依赖不存在的 logs 目录）
+const logFilePath = path.join(process.cwd(), 'app.log');
 
-function ensureLogDir() {
-  if (!fsSync.existsSync(logDir)) {
-    fsSync.mkdirSync(logDir, { recursive: true });
-  }
-  if (!fsSync.existsSync(logFilePath)) {
-    fsSync.writeFileSync(logFilePath, '\uFEFF', { encoding: 'utf8' });
+function ensureLogFile() {
+  const dir = path.dirname(logFilePath);
+  try {
+    if (!fsSync.existsSync(dir)) {
+      fsSync.mkdirSync(dir, { recursive: true });
+    }
+    if (!fsSync.existsSync(logFilePath)) {
+      fsSync.writeFileSync(logFilePath, '\uFEFF', { encoding: 'utf8' });
+    }
+  } catch (e) {
+    console.error('无法创建日志文件:', e && e.message ? e.message : e);
   }
 }
 
@@ -53,7 +58,7 @@ function logMessage(level, ...args) {
     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
   ).join(' ');
   const entry = `[${timestamp}] [${level.toUpperCase()}] ${msg}\n`;
-  ensureLogDir();
+  ensureLogFile();
   fsSync.appendFile(logFilePath, entry, { encoding: 'utf8' }, (err) => {
     if (err) console.error('写入日志失败:', err);
   });

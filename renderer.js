@@ -57,6 +57,20 @@ const dialogIconPath = document.getElementById('dialogIconPath');
 const toastContainer = document.getElementById('toastContainer');
 
 const VERSION = '1.5.0';
+
+function compareVersions(a, b) {
+  const norm = (v) => String(v).trim().replace(/^v/, '').split('-')[0];
+  const pa = norm(a).split('.').map(x => parseInt(x, 10) || 0);
+  const pb = norm(b).split('.').map(x => parseInt(x, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
 let tasks = [];
 let currentFilter = 'all';
 let currentSort = 'create-desc';
@@ -73,6 +87,51 @@ const APP_CONFIG = {
   dueThreshold: 3,
   dueCountToday: true
 };
+
+function getLocalIP() {
+  return new Promise((resolve) => {
+    const pc = new RTCPeerConnection({ iceServers: [] });
+    pc.createDataChannel('');
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .catch(() => resolve(null));
+
+    pc.onicecandidate = (e) => {
+      if (!e.candidate) {
+        pc.close();
+        resolve(null);
+        return;
+      }
+      const candidate = e.candidate.candidate;
+      const ipMatch = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+      if (ipMatch) {
+        const ip = ipMatch[1];
+        if (!ip.startsWith('127.') && !ip.startsWith('0.')) {
+          pc.close();
+          resolve(ip);
+          return;
+        }
+      }
+    };
+    setTimeout(() => {
+      pc.close();
+      resolve(null);
+    }, 3000);
+  });
+}
+
+function maskIP(ip) {
+  if (!ip) return '未获取到IP';
+  const parts = ip.split('.');
+  if (parts.length === 4) {
+    return `${parts[0]}.${parts[1]}.*.*`;
+  }
+  const segments = ip.split(':');
+  if (segments.length > 2) {
+    return segments.slice(0, 2).join(':') + ':***:***:***:***:***';
+  }
+  return ip;
+}
 
 function createDatePicker({
   displayInput,
@@ -327,7 +386,7 @@ function initCustomSelect({
     return null;
   }
 
-  function setValue(value) {
+  function setValue(value, invokeOnChange = true) {
     const items = optionsList.querySelectorAll('.option-item');
     let found = false;
     items.forEach(item => {
@@ -348,7 +407,7 @@ function initCustomSelect({
       currentLabel = first.textContent.trim();
       selectedText.textContent = currentLabel;
     }
-    if (onChange) onChange(currentValue, currentLabel);
+    if (invokeOnChange && onChange) onChange(currentValue, currentLabel);
   }
 
   function getValue() {
@@ -368,7 +427,7 @@ function initCustomSelect({
     const item = e.target.closest('.option-item');
     if (!item) return;
     const value = item.dataset.value;
-    setValue(value);
+    setValue(value, true);
     container.classList.remove('open');
   });
 
@@ -390,15 +449,15 @@ function initCustomSelect({
 
   const defaultValue = getDefaultValue ? getDefaultValue() : null;
   if (defaultValue !== null && defaultValue !== undefined) {
-    setValue(defaultValue);
+    setValue(defaultValue, false);
   } else {
     const activeItem = optionsList.querySelector('.option-item.active');
     if (activeItem) {
-      setValue(activeItem.dataset.value);
+      setValue(activeItem.dataset.value, false);
     } else {
       const firstItem = optionsList.querySelector('.option-item');
       if (firstItem) {
-        setValue(firstItem.dataset.value);
+        setValue(firstItem.dataset.value, false);
       }
     }
   }
@@ -955,7 +1014,7 @@ function loadConfig() {
 
   const savedLevel = localStorage.getItem('todo_log_level') || 'info';
   if (window.logLevelSelect) {
-    window.logLevelSelect.setValue(savedLevel);
+    window.logLevelSelect.setValue(savedLevel, false);
   }
 }
 
@@ -994,7 +1053,7 @@ async function init() {
     const level = config.logLevel || 'info';
     localStorage.setItem('todo_log_level', level);
     if (window.logLevelSelect) {
-      window.logLevelSelect.setValue(level);
+      window.logLevelSelect.setValue(level, false);
     }
     if (debugFromMain && window.electronAPI.setDebugMode) {
       window.electronAPI.setDebugMode(true);
@@ -1146,7 +1205,6 @@ document.addEventListener('DOMContentLoaded', () => {
       render();
       return;
     }
-    // 如果点击的是任务主区域（非操作按钮、非输入元素），也切换子任务展开状态
     const mainArea = e.target.closest('.todo-main');
     if (mainArea && !e.target.closest('.todo-actions') && !e.target.closest('input') && !e.target.closest('.tag')) {
       if (expandedTaskIds.has(id)) {
@@ -1407,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('todo_due_count_today');
       loadConfig();
       if (window.logLevelSelect) {
-        window.logLevelSelect.setValue('info');
+        window.logLevelSelect.setValue('info', false);
       }
       updateSortDisplay(currentSort);
       render();
@@ -1514,9 +1572,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await window.electronAPI.checkUpdate();
       const latestVersion = data.tag_name.replace(/^v/, '');
 
-      if (latestVersion !== VERSION) {
+      if (compareVersions(latestVersion, VERSION) > 0) {
         updateStatusText.innerHTML = `检测到新版本 v${latestVersion}`;
-        updateStatusText.style.color = '#e57373';
+        updateStatusText.style.color = getComputedStyle(document.documentElement).getPropertyValue('--toast-error-text') || '#c62828';
         const updateConfirm = await showConfirmDialog(`发现新版本 v${latestVersion}，是否前往下载？`);
         if (updateConfirm) {
           window.electronAPI.openUrl('https://github.com/junloye/Todo-List/releases/latest');
@@ -1524,7 +1582,7 @@ document.addEventListener('DOMContentLoaded', () => {
         log(`发现新版本 v${latestVersion}`);
       } else {
         updateStatusText.innerHTML = '当前已是最新版本';
-        updateStatusText.style.color = '#81c784';
+        updateStatusText.style.color = getComputedStyle(document.documentElement).getPropertyValue('--toast-success-text') || '#2e7d32';
         showToast('暂无更新');
         log('已是最新版本');
       }
@@ -1543,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       updateStatusText.innerHTML = errorMsg;
-      updateStatusText.style.color = '#e57373';
+      updateStatusText.style.color = getComputedStyle(document.documentElement).getPropertyValue('--toast-error-text') || '#c62828';
       showToast(errorMsg, 'error');
       log(`检查更新失败: ${errorMsg}`, 'error');
     } finally {
