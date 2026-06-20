@@ -134,6 +134,7 @@
   background: var(--danger-hover-bg);
   border-color: var(--danger-color);
   opacity: 0.8;
+  box-shadow: 0 6px 18px rgba(210, 47, 47, 0.12);
 }
 
 .about-info {

@@ -89,6 +89,52 @@
   outline: none;
 }
 
+.settings-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-control .settings-number {
+  width: 84px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.settings-control .settings-number:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+.settings-inline-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.settings-inline-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.settings-toggle-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-desc-inline {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
 [data-theme="dark"] .settings-item select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpolyline points='2 4 6 8 10 4' stroke='%23aaa' stroke-width='2' fill='none'/%3E%3C/svg%3E");
 }

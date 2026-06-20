@@ -48,8 +48,8 @@ body:
     label: "其他信息"
     description: "提供其他有助于解决问题的信息，例如："
     value: |
+      - 软件版本: Alpha / Beta / v-x.x.x
       - 操作系统: Windows xx / Linux / macOS
-      - Todo List 版本: Alpha / Beta / v-x.x.x
       - 其他可能相关的信息
   validations:
-    required: true
+    required: false

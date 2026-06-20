@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -64,6 +64,8 @@ function logMessage(level, ...args) {
 
 const getDataPath = () => path.join(app.getPath('userData'), 'todos.json');
 
+let tasksCache = [];
+
 async function ensureDataFile() {
   try {
     await fs.access(getDataPath());
@@ -76,7 +78,9 @@ async function ensureDataFile() {
 async function loadTodos() {
   try {
     const data = await fs.readFile(getDataPath(), 'utf-8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    tasksCache = parsed;
+    return parsed;
   } catch (error) {
     logMessage('error', '加载数据失败', error.message);
     return [];
@@ -85,6 +89,7 @@ async function loadTodos() {
 
 async function saveTodos(todos) {
   await fs.writeFile(getDataPath(), JSON.stringify(todos, null, 2));
+  tasksCache = todos;
   logMessage('info', '保存任务数据，共', todos.length, '项');
 }
 
@@ -100,6 +105,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
       preload: path.join(__dirname, 'preload.js'),
       zoomFactor: 1.0,
     },
@@ -121,6 +127,7 @@ app.whenReady().then(async () => {
     saveConfig({ debugEnabled, logLevel });
   }
   await ensureDataFile();
+  await loadTodos();
   createWindow();
 });
 
@@ -184,7 +191,7 @@ ipcMain.handle('update:check', async () => {
       signal: controller.signal,
       headers: {
         'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'Todo-List-Desktop-App/1.0.0'
+        'User-Agent': 'Todo-List-Desktop-App/1.5.0'
       }
     });
     clearTimeout(timeoutId);

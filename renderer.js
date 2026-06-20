@@ -13,10 +13,12 @@ const tasksView = document.getElementById('tasksView');
 const settingsView = document.getElementById('settingsView');
 const closeSettingsViewBtn = document.getElementById('closeSettingsViewBtn');
 
+const dueThresholdInput = document.getElementById('dueThresholdInput');
+const includeTodayToggle = document.getElementById('includeTodayToggle');
+
 const themeBtns = document.querySelectorAll('.theme-btn');
 const dueDateEnableToggle = document.getElementById('dueDateEnableToggle');
 const debugModeToggle = document.getElementById('debugModeToggle');
-const logLevelSelect = document.getElementById('logLevelSelect');
 const importDataBtn = document.getElementById('importDataBtn');
 const exportDataBtn = document.getElementById('exportDataBtn');
 const deleteAllDataBtn = document.getElementById('deleteAllDataBtn');
@@ -26,6 +28,8 @@ const openGithubBtn = document.getElementById('openGithubBtn');
 const settingsVersionSpan = document.getElementById('settingsVersionSpan');
 const updateStatusText = document.getElementById('updateStatusText');
 const dueDateContainer = document.getElementById('dueDatePicker');
+const copyInfoBtn = document.getElementById('copyInfoBtn');
+const feedbackBtn = document.getElementById('feedbackBtn');
 
 const taskTagsInput = document.getElementById('taskTagsInput');
 const taskSubtasksInput = document.getElementById('taskSubtasksInput');
@@ -52,7 +56,7 @@ const dialogCancelBtn = document.getElementById('dialogCancelBtn');
 const dialogIconPath = document.getElementById('dialogIconPath');
 const toastContainer = document.getElementById('toastContainer');
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 let tasks = [];
 let currentFilter = 'all';
 let currentSort = 'create-desc';
@@ -65,6 +69,9 @@ const APP_CONFIG = {
   theme: 'light',
   dueDateEnabled: true,
   debugMode: false
+  ,
+  dueThreshold: 3,
+  dueCountToday: true
 };
 
 function createDatePicker({
@@ -294,80 +301,109 @@ function log(message, level = 'info') {
   }
 }
 
-async function init() {
-  settingsVersionSpan.textContent = VERSION;
+function initCustomSelect({
+  containerId,
+  selectedTextId,
+  optionsSelector,
+  getDefaultValue,
+  onChange
+}) {
+  const container = document.getElementById(containerId);
+  if (!container) return null;
 
-  try {
-    const config = await window.electronAPI.configGet();
-    const debugFromMain = config.debugEnabled;
-    localStorage.setItem('todo_debug_mode', String(debugFromMain));
-    APP_CONFIG.debugMode = debugFromMain;
-    debugModeToggle.checked = debugFromMain;
+  const trigger = container.querySelector('.select-trigger');
+  const optionsList = container.querySelector(optionsSelector || '.select-options');
+  const selectedText = document.getElementById(selectedTextId);
+  if (!trigger || !optionsList || !selectedText) return null;
 
-    const level = config.logLevel || 'info';
-    if (logLevelSelect) {
-      logLevelSelect.value = level;
+  let currentValue = null;
+  let currentLabel = '';
+
+  function findOption(value) {
+    const items = optionsList.querySelectorAll('.option-item');
+    for (const item of items) {
+      if (item.dataset.value === value) return item;
     }
-    if (debugFromMain && window.electronAPI.setDebugMode) {
-      window.electronAPI.setDebugMode(true);
-    }
-  } catch (e) {
-    console.warn('读取主进程配置失败，使用 localStorage 默认值', e);
+    return null;
   }
 
-  loadConfig();
-  tasks = await window.electronAPI.loadTodos();
-  tasks = tasks.map(t => ({
-    ...t,
-    tags: t.tags || [],
-    subtasks: t.subtasks || []
-  }));
-  updateSortDisplay(currentSort);
-  render();
-  log('应用初始化完成');
-}
-
-function loadConfig() {
-  let theme = localStorage.getItem('todo_theme') || 'light';
-  const validThemes = ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'pink', 'yellow'];
-  if (!validThemes.includes(theme)) {
-    theme = 'light';
+  function setValue(value) {
+    const items = optionsList.querySelectorAll('.option-item');
+    let found = false;
+    items.forEach(item => {
+      if (item.dataset.value === value) {
+        item.classList.add('active');
+        currentValue = value;
+        currentLabel = item.textContent.trim();
+        selectedText.textContent = currentLabel;
+        found = true;
+      } else {
+        item.classList.remove('active');
+      }
+    });
+    if (!found && items.length > 0) {
+      const first = items[0];
+      first.classList.add('active');
+      currentValue = first.dataset.value;
+      currentLabel = first.textContent.trim();
+      selectedText.textContent = currentLabel;
+    }
+    if (onChange) onChange(currentValue, currentLabel);
   }
-  APP_CONFIG.theme = theme;
-  document.body.setAttribute('data-theme', theme);
 
-  themeBtns.forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.theme === theme);
+  function getValue() {
+    return currentValue;
+  }
+
+  function getLabel() {
+    return currentLabel;
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    container.classList.toggle('open');
   });
 
-  const savedDue = localStorage.getItem('todo_due_enabled');
-  APP_CONFIG.dueDateEnabled = savedDue !== null ? savedDue === 'true' : true;
-  dueDateEnableToggle.checked = APP_CONFIG.dueDateEnabled;
-  applyDueDateFeatureState();
+  optionsList.addEventListener('click', (e) => {
+    const item = e.target.closest('.option-item');
+    if (!item) return;
+    const value = item.dataset.value;
+    setValue(value);
+    container.classList.remove('open');
+  });
 
-  const debug = localStorage.getItem('todo_debug_mode') === 'true';
-  APP_CONFIG.debugMode = debug;
-  debugModeToggle.checked = debug;
-}
+  document.addEventListener('click', (e) => {
+    if (!container.contains(e.target)) {
+      container.classList.remove('open');
+    }
+  });
 
-function saveConfig() {
-  localStorage.setItem('todo_theme', APP_CONFIG.theme);
-  localStorage.setItem('todo_due_enabled', APP_CONFIG.dueDateEnabled);
-  localStorage.setItem('todo_debug_mode', APP_CONFIG.debugMode);
-}
+  trigger.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      container.classList.toggle('open');
+    }
+    if (e.key === 'Escape') {
+      container.classList.remove('open');
+    }
+  });
 
-function applyDueDateFeatureState() {
-  const isEnabled = APP_CONFIG.dueDateEnabled;
-  dueDateContainer.style.display = isEnabled ? 'inline-block' : 'none';
-  if (sortDueAscOpt) sortDueAscOpt.style.display = isEnabled ? 'block' : 'none';
-  const editPickerWrapper = document.getElementById('editDueDatePicker');
-  if (editPickerWrapper) {
-    editPickerWrapper.style.display = isEnabled ? 'flex' : 'none';
+  const defaultValue = getDefaultValue ? getDefaultValue() : null;
+  if (defaultValue !== null && defaultValue !== undefined) {
+    setValue(defaultValue);
+  } else {
+    const activeItem = optionsList.querySelector('.option-item.active');
+    if (activeItem) {
+      setValue(activeItem.dataset.value);
+    } else {
+      const firstItem = optionsList.querySelector('.option-item');
+      if (firstItem) {
+        setValue(firstItem.dataset.value);
+      }
+    }
   }
 
-  if (!isEnabled && currentSort === 'due-asc') {
-    handleSortChange('create-desc');
-  }
+  return { setValue, getValue, getLabel, container };
 }
 
 function showToast(message, type = 'success') {
@@ -419,6 +455,18 @@ function showConfirmDialog(message, type = 'warning') {
   });
 }
 
+function escapeHtml(text) {
+  if (!text) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
 function render() {
   todoListEl.innerHTML = '';
   let filtered = [...tasks];
@@ -450,6 +498,10 @@ function render() {
       if (!b.dueDate) return -1;
       return new Date(a.dueDate) - new Date(b.dueDate);
     }
+    if (currentSort === 'priority-desc') {
+      const order = { p0: 0, p1: 1, p2: 2, p3: 3 };
+      return (order[a.priority] ?? 99) - (order[b.priority] ?? 99);
+    }
     return 0;
   });
 
@@ -463,17 +515,40 @@ function render() {
     item.className = classes;
     item.setAttribute('data-id', task.id);
 
+    let priorityHtml = '';
+    if (task.priority) {
+      const label = task.priority.toUpperCase();
+      priorityHtml = `<span class="priority-label priority-${task.priority}">${escapeHtml(label)}</span>`;
+    }
+
     let tagsHtml = '';
     if (task.tags && task.tags.length) {
       tagsHtml = `<div class="todo-tags">${task.tags.map(tag =>
-        `<span class="tag">${tag}</span>`
+        `<span class="tag">${escapeHtml(tag)}</span>`
       ).join('')}</div>`;
     }
 
     let metaHtml = '';
     if (APP_CONFIG.dueDateEnabled && task.dueDate) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const due = new Date(task.dueDate);
+      due.setHours(0,0,0,0);
+      const diffDays = Math.round((due.getTime() - today.getTime()) / (24 * 3600 * 1000));
+      const remaining = APP_CONFIG.dueCountToday ? diffDays + 1 : diffDays;
       const todayStr = new Date().toISOString().split('T')[0];
       const isOverdue = !task.completed && task.dueDate < todayStr;
+      const dueDateEscaped = escapeHtml(task.dueDate);
+
+      let remainingLabel = '';
+      if (!isOverdue && !task.completed && remaining >= 0 && remaining <= (APP_CONFIG.dueThreshold ?? 3)) {
+        if (remaining === 0) {
+          remainingLabel = '（今天）';
+        } else {
+          remainingLabel = `（剩余${remaining}天）`;
+        }
+      }
+
       metaHtml = `
         <div class="todo-meta">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -482,7 +557,7 @@ function render() {
             <line x1="8" y1="2" x2="8" y2="6"></line>
             <line x1="3" y1="10" x2="21" y2="10"></line>
           </svg>
-          <span class="${isOverdue ? 'overdue' : ''}">${task.dueDate}${isOverdue ? ' (已过期)' : ''}</span>
+          <span class="${isOverdue ? 'overdue' : ''}">${dueDateEscaped}${isOverdue ? ' (已过期)' : ''}${remainingLabel}</span>
         </div>
       `;
     }
@@ -490,9 +565,9 @@ function render() {
     let subtaskHtml = '';
     if (task.subtasks && task.subtasks.length) {
       subtaskHtml = `<ul class="subtask-list">${task.subtasks.map(st =>
-        `<li class="subtask-item" data-subtask-id="${st.id}">
+        `<li class="subtask-item" data-subtask-id="${escapeHtml(st.id)}">
           <input type="checkbox" class="subtask-checkbox" ${st.completed ? 'checked' : ''}>
-          <span class="subtask-title">${st.title}</span>
+          <span class="subtask-title">${escapeHtml(st.title)}</span>
           <div class="subtask-actions">
             <button class="icon-btn edit-subtask-btn" title="编辑子任务">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -525,11 +600,13 @@ function render() {
 
     const isExpanded = expandedTaskIds.has(task.id);
 
+    const titleEscaped = escapeHtml(task.title);
+
     item.innerHTML = `
       <div class="todo-main">
         <input type="checkbox" class="todo-checkbox" ${task.completed ? 'checked' : ''}>
         <div class="todo-content">
-          <span class="todo-title">${task.title}</span>
+          <span class="todo-title">${priorityHtml}${titleEscaped}</span>
           ${tagsHtml}
           ${metaHtml}
         </div>
@@ -611,16 +688,6 @@ function renderTagFilterList() {
   });
 }
 
-function setActiveTagFilter(tag) {
-  activeTagFilter = tag || '';
-  render();
-}
-
-function clearTagFilter() {
-  activeTagFilter = '';
-  render();
-}
-
 function updateSortDisplay(value) {
   const option = sortOptions.querySelector(`.option-item[data-value="${value}"]`);
   if (option) {
@@ -637,7 +704,7 @@ function handleSortChange(value) {
   log(`排序方式切换为: ${value}`);
 }
 
-function initCustomSelect() {
+function initCustomSortSelect() {
   sortTrigger.addEventListener('click', (e) => {
     e.stopPropagation();
     customSelect.classList.toggle('open');
@@ -676,8 +743,22 @@ async function addTask() {
   if (!title) return;
   const dueDate = APP_CONFIG.dueDateEnabled ? document.getElementById('dueDateInput').value : '';
 
+  const priority = window.taskPrioritySelect ? window.taskPrioritySelect.getValue() || null : null;
+
   const tagsRaw = taskTagsInput.value.trim();
-  const tags = tagsRaw ? tagsRaw.split(/[，,]\s*/).filter(s => s !== '') : [];
+  let tags = tagsRaw ? tagsRaw.split(/[，,]\s*/).filter(s => s !== '') : [];
+
+  let truncated = false;
+  tags = tags.map(tag => {
+    if (tag.length > 8) {
+      truncated = true;
+      return tag.slice(0, 6);
+    }
+    return tag;
+  });
+  if (truncated) {
+    showToast('部分标签已自动截断至 8 个字符', 'error');
+  }
 
   const subtasksRaw = taskSubtasksInput.value.trim();
   const subtaskTitles = subtasksRaw ? subtasksRaw.split(/[，,]\s*/).filter(s => s !== '') : [];
@@ -694,7 +775,8 @@ async function addTask() {
     dueDate,
     createdAt: Date.now(),
     tags,
-    subtasks
+    subtasks,
+    priority
   };
 
   tasks.push(newTask);
@@ -702,6 +784,8 @@ async function addTask() {
   mainDatePicker.setDate('');
   taskTagsInput.value = '';
   taskSubtasksInput.value = '';
+  if (window.taskPrioritySelect) window.taskPrioritySelect.setValue('');
+
   await window.electronAPI.saveTodos(tasks);
   render();
   showToast('任务已成功添加');
@@ -735,6 +819,9 @@ function openEditModal(task) {
   editTitle.value = task.title;
   editDatePicker.setDate(task.dueDate || '');
   editTags.value = (task.tags || []).join(', ');
+  if (window.editPrioritySelect) {
+    window.editPrioritySelect.setValue(task.priority || '');
+  }
   editModal.showModal();
 }
 
@@ -744,6 +831,8 @@ async function saveEdit() {
   const tags = editTags.value.split(/[，,]\s*/).filter(s => s !== '');
   const dueDate = document.getElementById('editDueDate').value;
 
+  const priority = window.editPrioritySelect ? window.editPrioritySelect.getValue() || null : null;
+
   const task = tasks.find(t => t.id === editingTaskId);
   if (task) {
     task.title = title;
@@ -751,6 +840,7 @@ async function saveEdit() {
     if (APP_CONFIG.dueDateEnabled) {
       task.dueDate = dueDate;
     }
+    task.priority = priority;
     await window.electronAPI.saveTodos(tasks);
     render();
     editModal.close();
@@ -805,7 +895,10 @@ async function importData() {
     tasks = res.data.map(t => ({
       ...t,
       tags: t.tags || [],
-      subtasks: t.subtasks || []
+      subtasks: t.subtasks || [],
+      priority: t.priority || null,
+      reminder: t.reminder || null,
+      reminderNotified: t.reminderNotified || false
     }));
     expandedTaskIds.clear();
     await window.electronAPI.saveTodos(tasks);
@@ -828,6 +921,99 @@ function styleSpin() {
     style.innerHTML = '@keyframes spin { 100% { transform: rotate(360deg); } }';
     document.head.appendChild(style);
   }
+}
+
+function loadConfig() {
+  let theme = localStorage.getItem('todo_theme') || 'light';
+  const validThemes = ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'pink', 'yellow'];
+  if (!validThemes.includes(theme)) {
+    theme = 'light';
+  }
+  APP_CONFIG.theme = theme;
+  document.body.setAttribute('data-theme', theme);
+
+  themeBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+
+  const savedDue = localStorage.getItem('todo_due_enabled');
+  APP_CONFIG.dueDateEnabled = savedDue !== null ? savedDue === 'true' : true;
+  dueDateEnableToggle.checked = APP_CONFIG.dueDateEnabled;
+  applyDueDateFeatureState();
+
+  const debug = localStorage.getItem('todo_debug_mode') === 'true';
+  APP_CONFIG.debugMode = debug;
+  debugModeToggle.checked = debug;
+
+  const savedThreshold = parseInt(localStorage.getItem('todo_due_threshold'), 10);
+  APP_CONFIG.dueThreshold = !isNaN(savedThreshold) ? savedThreshold : APP_CONFIG.dueThreshold;
+  if (dueThresholdInput) dueThresholdInput.value = APP_CONFIG.dueThreshold;
+
+  const savedCountToday = localStorage.getItem('todo_due_count_today');
+  APP_CONFIG.dueCountToday = savedCountToday !== null ? savedCountToday === 'true' : APP_CONFIG.dueCountToday;
+  if (includeTodayToggle) includeTodayToggle.checked = APP_CONFIG.dueCountToday;
+
+  const savedLevel = localStorage.getItem('todo_log_level') || 'info';
+  if (window.logLevelSelect) {
+    window.logLevelSelect.setValue(savedLevel);
+  }
+}
+
+function saveConfig() {
+  localStorage.setItem('todo_theme', APP_CONFIG.theme);
+  localStorage.setItem('todo_due_enabled', APP_CONFIG.dueDateEnabled);
+  localStorage.setItem('todo_debug_mode', APP_CONFIG.debugMode);
+  localStorage.setItem('todo_due_threshold', String(APP_CONFIG.dueThreshold));
+  localStorage.setItem('todo_due_count_today', String(APP_CONFIG.dueCountToday));
+}
+
+function applyDueDateFeatureState() {
+  const isEnabled = APP_CONFIG.dueDateEnabled;
+  dueDateContainer.style.display = isEnabled ? 'inline-block' : 'none';
+  if (sortDueAscOpt) sortDueAscOpt.style.display = isEnabled ? 'block' : 'none';
+  const editPickerWrapper = document.getElementById('editDueDatePicker');
+  if (editPickerWrapper) {
+    editPickerWrapper.style.display = isEnabled ? 'flex' : 'none';
+  }
+
+  if (!isEnabled && currentSort === 'due-asc') {
+    handleSortChange('create-desc');
+  }
+}
+
+async function init() {
+  settingsVersionSpan.textContent = VERSION;
+
+  try {
+    const config = await window.electronAPI.configGet();
+    const debugFromMain = config.debugEnabled;
+    localStorage.setItem('todo_debug_mode', String(debugFromMain));
+    APP_CONFIG.debugMode = debugFromMain;
+    debugModeToggle.checked = debugFromMain;
+
+    const level = config.logLevel || 'info';
+    localStorage.setItem('todo_log_level', level);
+    if (window.logLevelSelect) {
+      window.logLevelSelect.setValue(level);
+    }
+    if (debugFromMain && window.electronAPI.setDebugMode) {
+      window.electronAPI.setDebugMode(true);
+    }
+  } catch (e) {
+    console.warn('读取主进程配置失败，使用 localStorage 默认值', e);
+  }
+
+  loadConfig();
+  tasks = await window.electronAPI.loadTodos();
+  tasks = tasks.map(t => ({
+    ...t,
+    tags: t.tags || [],
+    subtasks: t.subtasks || [],
+    priority: t.priority || null
+  }));
+  updateSortDisplay(currentSort);
+  render();
+  log('应用初始化完成');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -861,11 +1047,46 @@ document.addEventListener('DOMContentLoaded', () => {
     onSelect: (dateStr) => {}
   });
 
-  const dueDateContainer = document.getElementById('dueDatePicker');
-  window.dueDateContainer = dueDateContainer;
+  window.taskPrioritySelect = initCustomSelect({
+    containerId: 'taskPrioritySelect',
+    selectedTextId: 'taskPrioritySelectedText',
+    optionsSelector: '.select-options',
+    getDefaultValue: () => '',
+    onChange: (value, label) => {}
+  });
 
+  window.editPrioritySelect = initCustomSelect({
+    containerId: 'editPrioritySelect',
+    selectedTextId: 'editPrioritySelectedText',
+    optionsSelector: '.select-options',
+    getDefaultValue: () => '',
+    onChange: (value, label) => {}
+  });
+
+  window.logLevelSelect = initCustomSelect({
+    containerId: 'logLevelSelect',
+    selectedTextId: 'logLevelSelectedText',
+    optionsSelector: '.select-options',
+    getDefaultValue: () => {
+      const level = localStorage.getItem('todo_log_level') || 'info';
+      return level;
+    },
+    onChange: async (value, label) => {
+      if (window.electronAPI && window.electronAPI.setLogLevel) {
+        const result = await window.electronAPI.setLogLevel(value);
+        if (result.success) {
+          localStorage.setItem('todo_log_level', value);
+          showToast(`日志级别已切换为 ${label}`);
+          log(`日志级别切换为 ${value}`);
+        } else {
+          showToast(result.error || '设置失败', 'error');
+        }
+      }
+    }
+  });
+
+  initCustomSortSelect();
   init();
-  initCustomSelect();
 
   addBtn.addEventListener('click', addTask);
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
@@ -884,7 +1105,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   clearCompletedBtn.addEventListener('click', clearCompleted);
-
   exportBtn?.addEventListener('click', exportData);
 
   filterBtns.forEach(btn => btn.addEventListener('click', () => setFilter(btn.getAttribute('data-filter'))));
@@ -918,6 +1138,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (e.target.closest('.toggle-subtasks-btn')) {
+      if (expandedTaskIds.has(id)) {
+        expandedTaskIds.delete(id);
+      } else {
+        expandedTaskIds.add(id);
+      }
+      render();
+      return;
+    }
+    // 如果点击的是任务主区域（非操作按钮、非输入元素），也切换子任务展开状态
+    const mainArea = e.target.closest('.todo-main');
+    if (mainArea && !e.target.closest('.todo-actions') && !e.target.closest('input') && !e.target.closest('.tag')) {
       if (expandedTaskIds.has(id)) {
         expandedTaskIds.delete(id);
       } else {
@@ -1133,18 +1364,22 @@ document.addEventListener('DOMContentLoaded', () => {
     log(`调试模式: ${APP_CONFIG.debugMode ? '启用' : '禁用'}`);
   });
 
-  logLevelSelect?.addEventListener('change', async (e) => {
-    const level = e.target.value;
-    if (window.electronAPI && window.electronAPI.setLogLevel) {
-      const result = await window.electronAPI.setLogLevel(level);
-      if (result.success) {
-        showToast(`日志级别已切换为 ${level}`);
-        log(`日志级别切换为 ${level}`);
-      } else {
-        showToast(result.error || '设置失败', 'error');
-      }
-    }
-  });
+  if (dueThresholdInput) {
+    dueThresholdInput.addEventListener('change', (e) => {
+      const v = parseInt(e.target.value, 10);
+      APP_CONFIG.dueThreshold = !isNaN(v) && v >= 0 ? v : APP_CONFIG.dueThreshold;
+      saveConfig();
+      render();
+    });
+  }
+
+  if (includeTodayToggle) {
+    includeTodayToggle.addEventListener('change', (e) => {
+      APP_CONFIG.dueCountToday = !!e.target.checked;
+      saveConfig();
+      render();
+    });
+  }
 
   importDataBtn.addEventListener('click', importData);
   exportDataBtn.addEventListener('click', exportData);
@@ -1167,7 +1402,13 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('todo_theme');
       localStorage.removeItem('todo_due_enabled');
       localStorage.removeItem('todo_debug_mode');
+      localStorage.removeItem('todo_log_level');
+        localStorage.removeItem('todo_due_threshold');
+        localStorage.removeItem('todo_due_count_today');
       loadConfig();
+      if (window.logLevelSelect) {
+        window.logLevelSelect.setValue('info');
+      }
       updateSortDisplay(currentSort);
       render();
       showToast('设置偏好已恢复默认');
@@ -1206,6 +1447,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (copyInfoBtn) {
+    copyInfoBtn.addEventListener('click', async () => {
+      try {
+        const version = settingsVersionSpan ? settingsVersionSpan.textContent.trim() : VERSION;
+        const ua = navigator.userAgent || '';
+        const platform = navigator.platform || '';
+        const language = navigator.language || '';
+        const screenSize = `${screen.width}x${screen.height}`;
+        const dpi = window.devicePixelRatio || 1;
+        const info = `- 软件版本: ${version}\n- 操作系统: ${platform}\n- 用户代理: ${ua}\n- 语言: ${language}\n- 屏幕: ${screenSize}\n- DPR: ${dpi}`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(info);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = info;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+        showToast('软件与设备信息已复制到剪贴板');
+        log('已复制软件与设备信息');
+      } catch (err) {
+        console.error('复制信息失败', err);
+        showToast('复制失败，请手动复制', 'error');
+        log(`复制信息失败: ${err.message}`, 'error');
+      }
+    });
+  }
+
+  if (feedbackBtn) {
+    feedbackBtn.addEventListener('click', async () => {
+      try {
+        feedbackBtn.disabled = true;
+        await window.electronAPI.openUrl('https://github.com/JunLoye/Todo-List/issues/new/choose');
+        showToast('已打开反馈页面');
+        log('打开反馈页面');
+      } catch (error) {
+        console.error('打开反馈页面失败:', error);
+        showToast('无法打开反馈页面', 'error');
+        log(`打开反馈页面失败: ${error.message}`, 'error');
+      } finally {
+        feedbackBtn.disabled = false;
+      }
+    });
+  }
+
   let updating = false;
   checkUpdateBtn.addEventListener('click', async () => {
     if (updating) return;
@@ -1230,7 +1519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStatusText.style.color = '#e57373';
         const updateConfirm = await showConfirmDialog(`发现新版本 v${latestVersion}，是否前往下载？`);
         if (updateConfirm) {
-          window.electronAPI.openUrl('https://github.com/junloye/Todo-List/releases');
+          window.electronAPI.openUrl('https://github.com/junloye/Todo-List/releases/latest');
         }
         log(`发现新版本 v${latestVersion}`);
       } else {
