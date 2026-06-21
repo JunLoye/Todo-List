@@ -5,6 +5,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveTodos: (todos) => ipcRenderer.invoke('todo:save', todos),
   exportTodos: (todos) => ipcRenderer.invoke('todo:export', todos),
   importTodos: () => ipcRenderer.invoke('todo:import'),
+  loadHabits: () => ipcRenderer.invoke('habit:load'),
+  saveHabits: (habits) => ipcRenderer.invoke('habit:save', habits),
+  loadTemplates: () => ipcRenderer.invoke('template:load'),
+  saveTemplates: (templates) => ipcRenderer.invoke('template:save', templates),
+  loadGoals: () => ipcRenderer.invoke('goal:load'),
+  saveGoals: (goals) => ipcRenderer.invoke('goal:save', goals),
   openUrl: async (url) => {
     try {
       const result = await ipcRenderer.invoke('app:openUrl', url);

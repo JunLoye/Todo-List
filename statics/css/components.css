@@ -13,7 +13,7 @@
   outline: none;
   margin: 0 !important;
   width: 90%;
-  max-width: 400px;
+  max-width: 500px;
   overflow: visible;
 }
 .modal::backdrop,
@@ -60,7 +60,7 @@
   margin-top: 8px;
 }
 .custom-dialog {
-  max-width: 340px;
+  max-width: 480px;
 }
 .dialog-content {
   align-items: center;
@@ -293,6 +293,14 @@ input:checked + .slider::before {
   color: var(--filter-active-color);
 }
 
+.option-item .option-dir {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  color: var(--filter-active-color);
+}
+
 #sortSelectedText {
   display: flex;
   align-items: center;
@@ -303,4 +311,402 @@ input:checked + .slider::before {
   flex-shrink: 0;
   width: 14px;
   height: 14px;
+}
+
+#sortSelectedText .option-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+/* ========== 视图面板通用 ========== */
+.view-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.view-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.35rem;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.view-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding-left: 30px;
+}
+
+/* ========== 习惯追踪 ========== */
+.habits-toolbar,
+.goals-toolbar,
+.templates-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.habit-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.habit-card:hover {
+  border-color: var(--text-secondary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.habit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.habit-title {
+  flex: 1;
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.habit-badge {
+  font-size: 0.75rem;
+  background: var(--btn-secondary-hover-bg);
+  color: var(--text-secondary);
+  padding: 2px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.habit-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.habit-streak {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.habit-streak svg {
+  color: #f59e0b;
+}
+
+.habit-checkin-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.habit-checkin-day {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.habit-checkin-day:hover {
+  border-color: var(--text-secondary);
+}
+
+.habit-checkin-day.checked {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: white;
+}
+
+.habit-checkin-day.today {
+  border-color: var(--filter-active-bg);
+  border-width: 2px;
+}
+
+.habit-checkin-day.today.checked {
+  border-color: #388e3c;
+}
+
+.habit-checkin-day.empty {
+  border-color: transparent;
+  cursor: default;
+  background: transparent;
+}
+
+/* ========== 目标(OKR) ========== */
+.goal-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.goal-card:hover {
+  border-color: var(--text-secondary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.goal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.goal-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.goal-progress-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--btn-secondary-hover-bg);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background: var(--filter-active-bg);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.goal-kr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.kr-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--btn-secondary-hover-bg);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+.kr-item .kr-title {
+  flex: 1;
+}
+
+.kr-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 220px;
+}
+
+.kr-item .kr-progress-slider {
+  flex: 1;
+  min-width: 80px;
+}
+
+.kr-item .kr-pct {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 38px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.goal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ========== 模板 ========== */
+.template-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.template-card:hover {
+  border-color: var(--text-secondary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.template-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-name {
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.template-meta {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.template-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ========== 空状态 ========== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-state svg {
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.empty-state p {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* ========== 紧凑模式适配 ========== */
+[data-compact="true"] .habit-card,
+[data-compact="true"] .goal-card,
+[data-compact="true"] .template-card {
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+[data-compact="true"] .habit-checkin-day {
+  width: 24px;
+  height: 24px;
+  font-size: 0.6rem;
+}
+
+[data-compact="true"] .view-header {
+  margin-bottom: 14px;
+}
+
+[data-compact="true"] .view-header h2 {
+  font-size: 1.15rem;
+}
+
+[data-compact="true"] .kr-item {
+  padding: 6px 8px;
+  font-size: 0.82rem;
+}
+
+/* ========== 弹窗自定义表单 ========== */
+.dialog-body-custom {
+  width: 100%;
+  text-align: left;
+}
+
+.dialog-body-custom-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 320px;
+}
+
+.dialog-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.dialog-input:focus {
+  border-color: var(--text-primary);
+}
+
+.dialog-input.textarea {
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.dialog-row {
+  display: flex;
+  gap: 12px;
+}
+
+.dialog-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dialog-field-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.dialog-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* 弹窗内的自定义下拉菜单宽度自适应 */
+.dialog-body-custom .custom-select {
+  min-width: 0;
+  width: 100%;
 }

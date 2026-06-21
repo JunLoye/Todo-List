@@ -68,15 +68,18 @@ function logMessage(level, ...args) {
 }
 
 const getDataPath = () => path.join(app.getPath('userData'), 'todos.json');
+const getHabitsPath = () => path.join(app.getPath('userData'), 'habits.json');
+const getTemplatesPath = () => path.join(app.getPath('userData'), 'templates.json');
+const getGoalsPath = () => path.join(app.getPath('userData'), 'goals.json');
 
 let tasksCache = [];
 
-async function ensureDataFile() {
+async function ensureDataFile(filePath, defaultValue = []) {
   try {
-    await fs.access(getDataPath());
+    await fs.access(filePath);
   } catch {
-    await fs.writeFile(getDataPath(), JSON.stringify([], null, 2));
-    logMessage('info', '初始化数据文件');
+    await fs.writeFile(filePath, JSON.stringify(defaultValue, null, 2));
+    logMessage('info', `初始化数据文件: ${path.basename(filePath)}`);
   }
 }
 
@@ -96,6 +99,34 @@ async function saveTodos(todos) {
   await fs.writeFile(getDataPath(), JSON.stringify(todos, null, 2));
   tasksCache = todos;
   logMessage('info', '保存任务数据，共', todos.length, '项');
+}
+
+async function loadHabits() {
+  try {
+    const data = await fs.readFile(getHabitsPath(), 'utf-8');
+    return JSON.parse(data);
+  } catch { return []; }
+}
+async function saveHabits(habits) {
+  await fs.writeFile(getHabitsPath(), JSON.stringify(habits, null, 2));
+}
+async function loadTemplates() {
+  try {
+    const data = await fs.readFile(getTemplatesPath(), 'utf-8');
+    return JSON.parse(data);
+  } catch { return []; }
+}
+async function saveTemplates(templates) {
+  await fs.writeFile(getTemplatesPath(), JSON.stringify(templates, null, 2));
+}
+async function loadGoals() {
+  try {
+    const data = await fs.readFile(getGoalsPath(), 'utf-8');
+    return JSON.parse(data);
+  } catch { return []; }
+}
+async function saveGoals(goals) {
+  await fs.writeFile(getGoalsPath(), JSON.stringify(goals, null, 2));
 }
 
 function createWindow() {
@@ -133,7 +164,10 @@ app.whenReady().then(async () => {
     logLevel = 'debug';
     saveConfig({ debugEnabled, logLevel });
   }
-  await ensureDataFile();
+  await ensureDataFile(getDataPath());
+  await ensureDataFile(getHabitsPath());
+  await ensureDataFile(getTemplatesPath());
+  await ensureDataFile(getGoalsPath());
   await loadTodos();
   createWindow();
 });
@@ -145,6 +179,15 @@ app.on('window-all-closed', () => {
 
 ipcMain.handle('todo:load', loadTodos);
 ipcMain.handle('todo:save', (event, todos) => saveTodos(todos));
+
+ipcMain.handle('habit:load', loadHabits);
+ipcMain.handle('habit:save', (event, habits) => saveHabits(habits));
+
+ipcMain.handle('template:load', loadTemplates);
+ipcMain.handle('template:save', (event, templates) => saveTemplates(templates));
+
+ipcMain.handle('goal:load', loadGoals);
+ipcMain.handle('goal:save', (event, goals) => saveGoals(goals));
 
 ipcMain.handle('todo:export', async (event, todos) => {
   const { filePath, canceled } = await dialog.showSaveDialog({
@@ -198,7 +241,7 @@ ipcMain.handle('update:check', async () => {
       signal: controller.signal,
       headers: {
         'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'Todo-List-Desktop-App/1.5.0'
+        'User-Agent': 'Todo-List-Desktop-App/2.0.0'
       }
     });
     clearTimeout(timeoutId);

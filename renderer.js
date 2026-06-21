@@ -42,7 +42,7 @@ const sortTrigger = document.getElementById('sortTrigger');
 const sortOptions = document.getElementById('sortOptions');
 const sortSelectedText = document.getElementById('sortSelectedText');
 const customSelect = document.getElementById('customSortSelect');
-const sortDueAscOpt = document.getElementById('sortDueAscOpt');
+const sortDueOpt = document.getElementById('sortDueOpt');
 
 const editModal = document.getElementById('editModal');
 const editTitle = document.getElementById('editTitle');
@@ -57,7 +57,11 @@ const dialogCancelBtn = document.getElementById('dialogCancelBtn');
 const dialogIconPath = document.getElementById('dialogIconPath');
 const toastContainer = document.getElementById('toastContainer');
 
-const VERSION = '1.5.0';
+// 全局弹窗状态管理，防止事件监听器泄漏
+let _activeDialogCleanup = null;
+let _activeDialogResolve = null;
+
+const VERSION = '2.0.0';
 
 function compareVersions(a, b) {
   const norm = (v) => String(v).trim().replace(/^v/, '').split('-')[0];
@@ -79,6 +83,8 @@ let currentSearch = '';
 let activeTagFilter = '';
 let editingTaskId = null;
 let expandedTaskIds = new Set();
+let _initialRenderDone = false;
+let _goalsInitialRender = false;
 
 const APP_CONFIG = {
   theme: 'light',
@@ -489,8 +495,18 @@ function showToast(message, type = 'success') {
 }
 
 function showConfirmDialog(message, type = 'warning') {
+  // 清理之前残留的弹窗状态
+  if (_activeDialogCleanup) _activeDialogCleanup();
+
   return new Promise((resolve) => {
+    _activeDialogResolve = resolve;
     dialogMessage.textContent = message;
+    dialogMessage.style.display = '';
+    dialogIconPath.parentElement.style.display = '';
+    // 移除可能残留的自定义 body
+    const oldBody = customDialog.querySelector('.dialog-body-custom');
+    if (oldBody) oldBody.remove();
+
     if (type === 'danger') {
       dialogIconPath.setAttribute('d', 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z');
       dialogConfirmBtn.className = 'primary-btn';
@@ -504,10 +520,13 @@ function showConfirmDialog(message, type = 'warning') {
     const onConfirm = () => { cleanup(); resolve(true); };
     const onCancel = () => { cleanup(); resolve(false); };
     const cleanup = () => {
+      _activeDialogCleanup = null;
+      _activeDialogResolve = null;
       dialogConfirmBtn.removeEventListener('click', onConfirm);
       dialogCancelBtn.removeEventListener('click', onCancel);
       customDialog.close();
     };
+    _activeDialogCleanup = cleanup;
 
     dialogConfirmBtn.addEventListener('click', onConfirm);
     dialogCancelBtn.addEventListener('click', onCancel);
@@ -529,6 +548,10 @@ function escapeHtml(text) {
 
 function render() {
   todoListEl.innerHTML = '';
+  // 首次渲染时播放入场动画
+  if (!_initialRenderDone) {
+    todoListEl.classList.add('initial-render');
+  }
   let filtered = [...tasks];
 
   if (currentFilter === 'active') {
@@ -551,16 +574,19 @@ function render() {
   }
 
   filtered.sort((a, b) => {
-    if (currentSort === 'create-desc') return b.createdAt - a.createdAt;
-    if (currentSort === 'create-asc') return a.createdAt - b.createdAt;
-    if (currentSort === 'due-asc') {
+    const [field, dir] = currentSort.split('-');
+    const mul = dir === 'desc' ? -1 : 1;
+    if (field === 'create') return (a.createdAt - b.createdAt) * mul;
+    if (field === 'due') {
       if (!a.dueDate) return 1;
       if (!b.dueDate) return -1;
-      return new Date(a.dueDate) - new Date(b.dueDate);
+      return (new Date(a.dueDate) - new Date(b.dueDate)) * mul;
     }
-    if (currentSort === 'priority-desc') {
+    if (field === 'priority') {
       const order = { p0: 0, p1: 1, p2: 2, p3: 3 };
-      return (order[a.priority] ?? 99) - (order[b.priority] ?? 99);
+      const va = order[a.priority] ?? 99;
+      const vb = order[b.priority] ?? 99;
+      return (va - vb) * mul;
     }
     return 0;
   });
@@ -703,9 +729,29 @@ function render() {
 
   const total = tasks.length;
   const completed = tasks.filter(t => t.completed).length;
-  totalSpan.textContent = total;
-  activeSpan.textContent = total - completed;
-  completedSpan.textContent = completed;
+  const active = total - completed;
+
+  // 首次渲染后移除入场动画类，防止展开/折叠等操作重复播放
+  if (!_initialRenderDone) {
+    _initialRenderDone = true;
+    // 通过 setTimeout 在下一次微任务后移除，确保动画已触发
+    setTimeout(() => {
+      todoListEl.classList.remove('initial-render');
+    }, 350);
+  }
+
+  // 计数变化时弹出动画（仅值变化时触发，不移除类防闪烁）
+  const updateCount = (el, val) => {
+    if (parseInt(el.textContent, 10) !== val) {
+      el.textContent = val;
+      el.classList.remove('update');
+      void el.offsetWidth;
+      el.classList.add('update');
+    }
+  };
+  updateCount(totalSpan, total);
+  updateCount(activeSpan, active);
+  updateCount(completedSpan, completed);
 
   renderTagFilterList();
 }
@@ -749,13 +795,30 @@ function renderTagFilterList() {
 }
 
 function updateSortDisplay(value) {
-  const option = sortOptions.querySelector(`.option-item[data-value="${value}"]`);
-  if (option) {
-    sortSelectedText.textContent = option.textContent;
-    sortOptions.querySelectorAll('.option-item').forEach(item => item.classList.remove('active'));
-    option.classList.add('active');
-    currentSort = value;
-  }
+  const [field, dir] = value.split('-');
+  const option = sortOptions.querySelector(`.option-item[data-value="${field}"]`);
+  if (!option) return;
+  const label = option.querySelector('span').textContent;
+  const isAsc = dir === 'asc';
+  const fieldSvgHtml = option.querySelector('.option-icon').outerHTML;
+  const dirSvg =
+    `<svg class="selected-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"` +
+    ` stroke-linecap="round" stroke-linejoin="round">` +
+    `<polyline points="6 9 12 3 18 9"${isAsc ? '' : ' stroke-opacity="0.3"'}/>` +
+    `<polyline points="6 15 12 21 18 15"${isAsc ? ' stroke-opacity="0.3"' : ''}/>` +
+    `</svg>`;
+  // 触发器: [字段图标] 文本 [方向箭头]
+  sortSelectedText.innerHTML = `${fieldSvgHtml}${label}${dirSvg}`;
+  // 更新选项: 移除所有选项的右侧方向图标，给活动选项添加
+  sortOptions.querySelectorAll('.option-item').forEach(item => {
+    item.classList.remove('active');
+    const existingDir = item.querySelector('.option-dir');
+    if (existingDir) existingDir.remove();
+  });
+  option.classList.add('active');
+  const optionDirHtml = dirSvg.replace('selected-icon', 'option-dir');
+  option.insertAdjacentHTML('beforeend', optionDirHtml);
+  currentSort = value;
 }
 
 function handleSortChange(value) {
@@ -773,13 +836,22 @@ function initCustomSortSelect() {
   sortOptions.addEventListener('click', (e) => {
     const option = e.target.closest('.option-item');
     if (!option) return;
-    const value = option.dataset.value;
-    if (!APP_CONFIG.dueDateEnabled && value === 'due-asc') {
+    const field = option.dataset.value;
+    if (!APP_CONFIG.dueDateEnabled && field === 'due') {
       showToast('截止日期功能已禁用', 'error');
       customSelect.classList.remove('open');
       return;
     }
-    handleSortChange(value);
+    const currentField = currentSort.split('-')[0];
+    const currentDir = currentSort.split('-')[1];
+    // 点击同一字段切换正反序，否则使用默认方向
+    let dir;
+    if (field === currentField) {
+      dir = currentDir === 'desc' ? 'asc' : 'desc';
+    } else {
+      dir = field === 'due' ? 'asc' : 'desc';
+    }
+    handleSortChange(`${field}-${dir}`);
     customSelect.classList.remove('open');
   });
 
@@ -1036,17 +1108,722 @@ function saveConfig() {
 function applyDueDateFeatureState() {
   const isEnabled = APP_CONFIG.dueDateEnabled;
   dueDateContainer.style.display = isEnabled ? 'inline-block' : 'none';
-  if (sortDueAscOpt) sortDueAscOpt.style.display = isEnabled ? 'block' : 'none';
+  if (sortDueOpt) sortDueOpt.style.display = isEnabled ? 'block' : 'none';
   const editPickerWrapper = document.getElementById('editDueDatePicker');
   if (editPickerWrapper) {
     editPickerWrapper.style.display = isEnabled ? 'flex' : 'none';
   }
 
-  if (!isEnabled && currentSort === 'due-asc') {
+  if (!isEnabled && currentSort.startsWith('due-')) {
     handleSortChange('create-desc');
   }
 }
 
+// ============================================================
+// 习惯追踪
+// ============================================================
+let habits = [];
+let currentHabitFilter = 'all';
+
+function formatDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getDateRange(frequency) {
+  const today = new Date();
+  const dates = [];
+  if (frequency === 'daily') {
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(formatDateStr(d));
+    }
+  } else if (frequency === 'weekly') {
+    for (let i = 55; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(formatDateStr(d));
+    }
+  } else {
+    for (let i = 89; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(formatDateStr(d));
+    }
+  }
+  return dates;
+}
+
+function getHabitStreak(habit) {
+  const records = new Set(habit.records || []);
+  const today = new Date();
+  let streak = 0;
+  for (let i = 0; ; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = formatDateStr(d);
+    if (records.has(key)) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function getHabitCompletionRate(habit) {
+  const records = new Set(habit.records || []);
+  const range = getDateRange(habit.frequency);
+  const total = range.length;
+  const checked = range.filter(d => records.has(d)).length;
+  return total > 0 ? Math.round((checked / total) * 100) : 0;
+}
+
+function renderHabits() {
+  const container = document.getElementById('habitsList');
+  if (!container) return;
+  if (!habits.length) {
+    container.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <p>还没有习惯，点击上方按钮新建一个吧</p>
+    </div>`;
+    return;
+  }
+  container.innerHTML = habits.map(habit => {
+    const records = new Set(habit.records || []);
+    const streak = getHabitStreak(habit);
+    const rate = getHabitCompletionRate(habit);
+    const todayStr = formatDateStr(new Date());
+    const isCheckedToday = records.has(todayStr);
+    const dateRange = getDateRange(habit.frequency);
+    const freqLabel = { daily: '每天', weekly: '每周', monthly: '每月' }[habit.frequency] || habit.frequency;
+
+    const daysHtml = dateRange.map(d => {
+      const isToday = d === todayStr;
+      const checked = records.has(d);
+      let cls = 'habit-checkin-day';
+      if (checked) cls += ' checked';
+      if (isToday) cls += ' today';
+      return `<div class="${cls}" data-habit-id="${habit.id}" data-date="${d}" title="${d}${checked ? ' ✓' : ''}">${new Date(d).getDate()}</div>`;
+    }).join('');
+
+    return `<div class="habit-card" data-habit-id="${habit.id}">
+      <div class="habit-header">
+        <span class="habit-title">${escapeHtml(habit.title)}</span>
+        <span class="habit-badge">${freqLabel}</span>
+        <div class="habit-actions">
+          <button class="icon-btn checkin-habit-btn" title="${isCheckedToday ? '已打卡' : '打卡'}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="${isCheckedToday ? '#4caf50' : 'none'}" stroke="${isCheckedToday ? '#4caf50' : 'currentColor'}" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="icon-btn edit-habit-btn" title="编辑">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="icon-btn delete-habit-btn" title="删除">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="habit-streak">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        连续 ${streak} 天 · 完成率 ${rate}%
+      </div>
+      <div class="habit-checkin-grid">${daysHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+async function saveHabitsAndRender() {
+  await window.electronAPI.saveHabits(habits);
+  renderHabits();
+}
+
+function promptHabit(habitToEdit = null) {
+  // 清理之前残留的弹窗状态
+  if (_activeDialogCleanup) _activeDialogCleanup();
+
+  const isEdit = !!habitToEdit;
+  const title = isEdit ? '编辑习惯' : '新建习惯';
+  const defaultFreq = isEdit ? habitToEdit.frequency : 'daily';
+  const html = `
+    <div class="dialog-body-custom-inner">
+      <div class="input-wrapper">
+        <input type="text" id="habitPromptTitle" class="dialog-input" placeholder="习惯名称，如：每天喝水" value="${isEdit ? escapeHtml(habitToEdit.title) : ''}">
+      </div>
+      <div class="dialog-row">
+        <div class="dialog-field">
+          <label class="dialog-field-label">频率</label>
+          <div class="custom-select" id="habitFreqSelect">
+            <button class="select-trigger" type="button">
+              <span id="habitFreqSelectedText">${defaultFreq === 'daily' ? '每天' : defaultFreq === 'weekly' ? '每周' : '每月'}</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="2 4 6 8 10 4"/>
+              </svg>
+            </button>
+            <ul class="select-options" role="listbox">
+              <li data-value="daily" class="option-item ${defaultFreq === 'daily' ? 'active' : ''}">每天</li>
+              <li data-value="weekly" class="option-item ${defaultFreq === 'weekly' ? 'active' : ''}">每周</li>
+              <li data-value="monthly" class="option-item ${defaultFreq === 'monthly' ? 'active' : ''}">每月</li>
+            </ul>
+          </div>
+        </div>
+        <div class="dialog-field">
+          <label class="dialog-field-label">目标次数</label>
+          <input type="number" id="habitPromptTarget" class="dialog-input" min="1" value="${isEdit ? habitToEdit.targetCount : 1}">
+        </div>
+      </div>
+    </div>
+  `;
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+
+  const dialog = document.getElementById('customDialog');
+  dialogMessage.textContent = title;
+  dialogMessage.style.display = 'none';
+  dialogIconPath.parentElement.style.display = 'none';
+  dialogConfirmBtn.style.background = 'var(--btn-primary-bg)';
+  dialogConfirmBtn.className = 'primary-btn';
+
+  const existingBody = dialog.querySelector('.dialog-body-custom');
+  if (existingBody) existingBody.remove();
+  const body = document.createElement('div');
+  body.className = 'dialog-body-custom';
+  body.appendChild(tempDiv.firstElementChild);
+  dialog.querySelector('.dialog-content').insertBefore(body, dialog.querySelector('.dialog-footer'));
+
+  // 初始化自定义下拉菜单
+  const freqSelect = initCustomSelect({
+    containerId: 'habitFreqSelect',
+    selectedTextId: 'habitFreqSelectedText',
+    optionsSelector: '.select-options',
+    getDefaultValue: () => defaultFreq,
+    onChange: () => {}
+  });
+
+  return new Promise(resolve => {
+    _activeDialogResolve = resolve;
+    const onConfirm = () => {
+      const t = document.getElementById('habitPromptTitle')?.value.trim();
+      const f = freqSelect ? freqSelect.getValue() : 'daily';
+      const tc = parseInt(document.getElementById('habitPromptTarget')?.value, 10) || 1;
+      cleanup();
+      resolve(t ? { title: t, frequency: f, targetCount: tc } : null);
+    };
+    const onCancel = () => { cleanup(); resolve(null); };
+    const cleanup = () => {
+      _activeDialogCleanup = null;
+      _activeDialogResolve = null;
+      dialogConfirmBtn.removeEventListener('click', onConfirm);
+      dialogCancelBtn.removeEventListener('click', onCancel);
+      dialog.close();
+      dialogMessage.style.display = '';
+      dialogIconPath.parentElement.style.display = '';
+      if (body) body.remove();
+    };
+    _activeDialogCleanup = cleanup;
+    dialogConfirmBtn.addEventListener('click', onConfirm);
+    dialogCancelBtn.addEventListener('click', onCancel);
+    dialog.showModal();
+  });
+}
+
+async function handleAddHabit() {
+  const result = await promptHabit();
+  if (!result) return;
+  habits.push({
+    id: Date.now().toString(),
+    title: result.title,
+    frequency: result.frequency,
+    targetCount: result.targetCount,
+    records: [],
+    createdAt: Date.now()
+  });
+  await saveHabitsAndRender();
+  showToast('习惯已创建');
+}
+
+async function handleEditHabit(id) {
+  const habit = habits.find(h => h.id === id);
+  if (!habit) return;
+  const result = await promptHabit(habit);
+  if (!result) return;
+  habit.title = result.title;
+  habit.frequency = result.frequency;
+  habit.targetCount = result.targetCount;
+  await saveHabitsAndRender();
+  showToast('习惯已更新');
+}
+
+async function handleDeleteHabit(id) {
+  const confirm = await showConfirmDialog('确定删除这个习惯吗？打卡记录也将丢失。', 'danger');
+  if (!confirm) return;
+  habits = habits.filter(h => h.id !== id);
+  await saveHabitsAndRender();
+  showToast('习惯已删除');
+}
+
+async function handleCheckinHabit(id) {
+  const habit = habits.find(h => h.id === id);
+  if (!habit) return;
+  const todayStr = formatDateStr(new Date());
+  if (!habit.records) habit.records = [];
+  const idx = habit.records.indexOf(todayStr);
+  if (idx > -1) {
+    habit.records.splice(idx, 1);
+    showToast('取消打卡');
+  } else {
+    habit.records.push(todayStr);
+    showToast('打卡成功！');
+  }
+  await saveHabitsAndRender();
+}
+
+function handleHabitDateClick(habitId, dateStr) {
+  const habit = habits.find(h => h.id === habitId);
+  if (!habit) return;
+  if (!habit.records) habit.records = [];
+  const idx = habit.records.indexOf(dateStr);
+  if (idx > -1) {
+    habit.records.splice(idx, 1);
+  } else {
+    habit.records.push(dateStr);
+  }
+  saveHabitsAndRender();
+}
+
+// ============================================================
+// 目标与关键成果 (OKR)
+// ============================================================
+let goals = [];
+
+function renderGoals() {
+  const container = document.getElementById('goalsList');
+  if (!container) return;
+  if (!goals.length) {
+    container.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <p>还没有目标，点击上方按钮新建一个吧</p>
+    </div>`;
+    return;
+  }
+  container.innerHTML = goals.map(goal => {
+    // 首次渲染后标记，使进度条动画只播放一次
+    _goalsInitialRender = true;
+    const totalKr = goal.keyResults.length;
+    const completedKr = goal.keyResults.filter(kr => kr.progress >= 100).length;
+    const overallProgress = totalKr > 0 ? Math.round(goal.keyResults.reduce((s, kr) => s + kr.progress, 0) / totalKr) : 0;
+
+    const krHtml = goal.keyResults.map(kr =>
+      `<div class="kr-item" data-kr-id="${kr.id}">
+        <span class="kr-title">${escapeHtml(kr.title)}</span>
+        <div class="kr-slider-row">
+          <input type="range" class="kr-progress-slider" min="0" max="100" step="5" value="${kr.progress}" data-goal-id="${goal.id}" data-kr-id="${kr.id}">
+          <span class="kr-pct kr-progress-value" style="color:${kr.progress >= 100 ? 'var(--success-color, #2e7d32)' : 'var(--text-primary)'}">${kr.progress}%</span>
+        </div>
+      </div>`
+    ).join('');
+
+    return `<div class="goal-card" data-goal-id="${goal.id}">
+      <div class="goal-header">
+        <span class="goal-title">${escapeHtml(goal.title)}</span>
+        <span class="goal-progress-text">${overallProgress}% · ${completedKr}/${totalKr} KR</span>
+      </div>
+      <div class="goal-progress-bar">
+        <div class="goal-progress-fill${!_goalsInitialRender ? ' animate' : ''}" style="width:${overallProgress}%"></div>
+      </div>
+      <div class="goal-kr-list">${krHtml}</div>
+      <div class="goal-actions">
+        <button class="secondary-btn add-kr-btn" data-goal-id="${goal.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          添加关键成果
+        </button>
+        <button class="icon-btn edit-goal-btn" title="编辑目标">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="icon-btn delete-goal-btn" title="删除目标">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveGoalsAndRender() {
+  await window.electronAPI.saveGoals(goals);
+  renderGoals();
+}
+
+function promptGoal(goalToEdit = null) {
+  // 清理之前残留的弹窗状态
+  if (_activeDialogCleanup) _activeDialogCleanup();
+
+  const isEdit = !!goalToEdit;
+  const title = isEdit ? '编辑目标' : '新建目标';
+  const html = `
+    <div class="dialog-body-custom-inner">
+      <div class="input-wrapper">
+        <input type="text" id="goalPromptTitle" class="dialog-input" placeholder="目标名称，如：提升编程能力" value="${isEdit ? escapeHtml(goalToEdit.title) : ''}">
+      </div>
+      <div id="goalKrContainer">
+        <p class="dialog-hint">关键成果（每行一个，格式：成果名称）</p>
+        <textarea id="goalKrInput" class="dialog-input textarea" rows="3" placeholder="每天刷一道算法题&#10;完成一个开源项目&#10;阅读3本技术书籍">${isEdit ? goalToEdit.keyResults.map(kr => kr.title).join('\n') : ''}</textarea>
+      </div>
+    </div>
+  `;
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+
+  const dialog = document.getElementById('customDialog');
+  dialogMessage.textContent = title;
+  dialogMessage.style.display = 'none';
+  dialogIconPath.parentElement.style.display = 'none';
+  dialogConfirmBtn.style.background = 'var(--btn-primary-bg)';
+  dialogConfirmBtn.className = 'primary-btn';
+
+  const existingBody = dialog.querySelector('.dialog-body-custom');
+  if (existingBody) existingBody.remove();
+  const body = document.createElement('div');
+  body.className = 'dialog-body-custom';
+  body.appendChild(tempDiv.firstElementChild);
+  dialog.querySelector('.dialog-content').insertBefore(body, dialog.querySelector('.dialog-footer'));
+
+  return new Promise(resolve => {
+    _activeDialogResolve = resolve;
+    const onConfirm = () => {
+      const t = document.getElementById('goalPromptTitle')?.value.trim();
+      const krRaw = document.getElementById('goalKrInput')?.value.trim();
+      const krList = krRaw ? krRaw.split('\n').map(s => s.trim()).filter(s => s) : [];
+      cleanup();
+      resolve(t ? { title: t, keyResults: krList } : null);
+    };
+    const onCancel = () => { cleanup(); resolve(null); };
+    const cleanup = () => {
+      _activeDialogCleanup = null;
+      _activeDialogResolve = null;
+      dialogConfirmBtn.removeEventListener('click', onConfirm);
+      dialogCancelBtn.removeEventListener('click', onCancel);
+      dialog.close();
+      dialogMessage.style.display = '';
+      dialogIconPath.parentElement.style.display = '';
+      if (body) body.remove();
+    };
+    _activeDialogCleanup = cleanup;
+    dialogConfirmBtn.addEventListener('click', onConfirm);
+    dialogCancelBtn.addEventListener('click', onCancel);
+    dialog.showModal();
+  });
+}
+
+async function handleAddGoal() {
+  const result = await promptGoal();
+  if (!result) return;
+  goals.push({
+    id: Date.now().toString(),
+    title: result.title,
+    keyResults: result.keyResults.map((krTitle, i) => ({
+      id: `${Date.now()}-${i}`,
+      title: krTitle,
+      progress: 0
+    })),
+    createdAt: Date.now()
+  });
+  await saveGoalsAndRender();
+  showToast('目标已创建');
+}
+
+async function handleEditGoal(id) {
+  const goal = goals.find(g => g.id === id);
+  if (!goal) return;
+  const result = await promptGoal(goal);
+  if (!result) return;
+  goal.title = result.title;
+  // 保留已有 KR，更新新增/删除
+  const newTitles = result.keyResults;
+  const existing = goal.keyResults;
+  const updated = newTitles.map((t, i) => {
+    if (i < existing.length) {
+      existing[i].title = t;
+      return existing[i];
+    }
+    return { id: `${Date.now()}-${i}`, title: t, progress: 0 };
+  });
+  goal.keyResults = updated;
+  await saveGoalsAndRender();
+  showToast('目标已更新');
+}
+
+async function handleDeleteGoal(id) {
+  const confirm = await showConfirmDialog('确定删除这个目标及其所有关键成果吗？', 'danger');
+  if (!confirm) return;
+  goals = goals.filter(g => g.id !== id);
+  await saveGoalsAndRender();
+  showToast('目标已删除');
+}
+
+async function handleKrProgressChange(goalId, krId, value) {
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  const kr = goal.keyResults.find(k => k.id === krId);
+  if (!kr) return;
+  kr.progress = Math.min(100, Math.max(0, parseInt(value, 10) || 0));
+  await saveGoalsAndRender();
+}
+
+async function handleAddKr(goalId) {
+  const goal = goals.find(g => g.id === goalId);
+  if (!goal) return;
+  // 清理之前残留的弹窗状态
+  if (_activeDialogCleanup) _activeDialogCleanup();
+
+  const html = `
+    <div class="dialog-body-custom-inner">
+      <div class="input-wrapper">
+        <input type="text" id="krPromptTitle" class="dialog-input" placeholder="关键成果名称">
+      </div>
+    </div>
+  `;
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  const dialog = document.getElementById('customDialog');
+  dialogMessage.textContent = '添加关键成果';
+  dialogMessage.style.display = 'none';
+  dialogIconPath.parentElement.style.display = 'none';
+  dialogConfirmBtn.style.background = 'var(--btn-primary-bg)';
+  dialogConfirmBtn.className = 'primary-btn';
+  const existingBody = dialog.querySelector('.dialog-body-custom');
+  if (existingBody) existingBody.remove();
+  const body = document.createElement('div');
+  body.className = 'dialog-body-custom';
+  body.appendChild(tempDiv.firstElementChild);
+  dialog.querySelector('.dialog-content').insertBefore(body, dialog.querySelector('.dialog-footer'));
+
+  return new Promise(resolve => {
+    _activeDialogResolve = resolve;
+    const onConfirm = () => {
+      const t = document.getElementById('krPromptTitle')?.value.trim();
+      cleanup();
+      resolve(t || null);
+    };
+    const onCancel = () => { cleanup(); resolve(null); };
+    const cleanup = () => {
+      _activeDialogCleanup = null;
+      _activeDialogResolve = null;
+      dialogConfirmBtn.removeEventListener('click', onConfirm);
+      dialogCancelBtn.removeEventListener('click', onCancel);
+      dialog.close();
+      dialogMessage.style.display = '';
+      dialogIconPath.parentElement.style.display = '';
+      if (body) body.remove();
+    };
+    _activeDialogCleanup = cleanup;
+    dialogConfirmBtn.addEventListener('click', onConfirm);
+    dialogCancelBtn.addEventListener('click', onCancel);
+    dialog.showModal();
+  }).then(async (title) => {
+    if (!title) return;
+    goal.keyResults.push({ id: Date.now().toString(), title, progress: 0 });
+    await saveGoalsAndRender();
+    showToast('关键成果已添加');
+  });
+}
+
+// ============================================================
+// 模板功能
+// ============================================================
+let templates = [];
+
+function renderTemplates() {
+  const container = document.getElementById('templatesList');
+  if (!container) return;
+  if (!templates.length) {
+    container.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <p>还没有模板，先将任务列表保存为模板吧</p>
+    </div>`;
+    return;
+  }
+  container.innerHTML = templates.map(tpl =>
+    `<div class="template-card" data-template-id="${tpl.id}">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <div class="template-info">
+        <div class="template-name">${escapeHtml(tpl.name)}</div>
+        <div class="template-meta">${tpl.taskCount} 个任务 · ${new Date(tpl.createdAt).toLocaleDateString('zh-CN')}</div>
+      </div>
+      <div class="template-actions">
+        <button class="primary-btn apply-template-btn" data-template-id="${tpl.id}" style="padding:6px 14px;font-size:0.85rem;">应用</button>
+        <button class="icon-btn delete-template-btn" data-template-id="${tpl.id}" title="删除模板">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+async function saveTemplatesAndRender() {
+  await window.electronAPI.saveTemplates(templates);
+  renderTemplates();
+}
+
+async function handleSaveAsTemplate() {
+  if (!tasks.length) {
+    showToast('没有任务可以保存为模板', 'error');
+    return;
+  }
+  // 清理之前残留的弹窗状态
+  if (_activeDialogCleanup) _activeDialogCleanup();
+
+  const html = `
+    <div class="dialog-body-custom-inner">
+      <div class="input-wrapper">
+        <input type="text" id="templateNameInput" class="dialog-input" placeholder="模板名称，如：旅行打包清单">
+      </div>
+      <p class="dialog-hint">将保存当前全部 ${tasks.length} 个任务作为模板</p>
+    </div>
+  `;
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  const dialog = document.getElementById('customDialog');
+  dialogMessage.textContent = '保存为模板';
+  dialogMessage.style.display = 'none';
+  dialogIconPath.parentElement.style.display = 'none';
+  dialogConfirmBtn.style.background = 'var(--btn-primary-bg)';
+  dialogConfirmBtn.className = 'primary-btn';
+  const existingBody = dialog.querySelector('.dialog-body-custom');
+  if (existingBody) existingBody.remove();
+  const body = document.createElement('div');
+  body.className = 'dialog-body-custom';
+  body.appendChild(tempDiv.firstElementChild);
+  dialog.querySelector('.dialog-content').insertBefore(body, dialog.querySelector('.dialog-footer'));
+
+  const getName = () => new Promise(resolve => {
+    _activeDialogResolve = resolve;
+    const onConfirm = () => { const name = document.getElementById('templateNameInput')?.value.trim() || null; cleanup(); resolve(name); };
+    const onCancel = () => { cleanup(); resolve(null); };
+    const cleanup = () => {
+      _activeDialogCleanup = null;
+      _activeDialogResolve = null;
+      dialogConfirmBtn.removeEventListener('click', onConfirm);
+      dialogCancelBtn.removeEventListener('click', onCancel);
+      dialog.close();
+      dialogMessage.style.display = '';
+      dialogIconPath.parentElement.style.display = '';
+      if (body) body.remove();
+    };
+    _activeDialogCleanup = cleanup;
+    dialogConfirmBtn.addEventListener('click', onConfirm);
+    dialogCancelBtn.addEventListener('click', onCancel);
+    dialog.showModal();
+  });
+
+  const name = await getName();
+  if (!name) return;
+  const templateTasks = tasks.map(t => ({
+    title: t.title,
+    tags: [...(t.tags || [])],
+    priority: t.priority || null
+  }));
+  templates.push({
+    id: Date.now().toString(),
+    name,
+    tasks: templateTasks,
+    taskCount: templateTasks.length,
+    createdAt: Date.now()
+  });
+  await saveTemplatesAndRender();
+  showToast(`模板「${name}」已保存`);
+}
+
+async function handleApplyTemplate(id) {
+  const tpl = templates.find(t => t.id === id);
+  if (!tpl) return;
+  const confirm = await showConfirmDialog(`应用模板「${tpl.name}」将添加 ${tpl.taskCount} 个任务，是否继续？`);
+  if (!confirm) return;
+  for (const t of tpl.tasks) {
+    tasks.push({
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+      title: t.title,
+      completed: false,
+      dueDate: '',
+      createdAt: Date.now(),
+      tags: [...(t.tags || [])],
+      subtasks: [],
+      priority: t.priority || null
+    });
+  }
+  await window.electronAPI.saveTodos(tasks);
+  render();
+  showToast(`已应用模板「${tpl.name}」，添加 ${tpl.taskCount} 个任务`);
+}
+
+async function handleDeleteTemplate(id) {
+  const confirm = await showConfirmDialog('确定删除这个模板吗？', 'danger');
+  if (!confirm) return;
+  templates = templates.filter(t => t.id !== id);
+  await saveTemplatesAndRender();
+  showToast('模板已删除');
+}
+
+// ============================================================
+// 视图切换 (带动画)
+// ============================================================
+let _currentViewId = 'tasksView';
+let _viewAnimating = false;
+
+function switchView(viewId) {
+  if (_viewAnimating || viewId === _currentViewId) return;
+  _viewAnimating = true;
+
+  const currentEl = document.getElementById(_currentViewId);
+  const targetEl = document.getElementById(viewId);
+  if (!targetEl) { _viewAnimating = false; return; }
+
+  // 计算方向
+  const viewOrder = ['tasksView', 'habitsView', 'goalsView', 'templatesView'];
+  const curIdx = viewOrder.indexOf(_currentViewId);
+  const tgtIdx = viewOrder.indexOf(viewId);
+  const isForward = tgtIdx > curIdx;
+
+  // 设置当前面板退出动画
+  if (currentEl) {
+    currentEl.classList.remove('active', 'enter-right', 'enter-left');
+    currentEl.classList.add(isForward ? 'exit-left' : 'exit-right');
+  }
+
+  // 设置目标面板进入动画
+  targetEl.classList.remove('exit-left', 'exit-right', 'enter-right', 'enter-left');
+  targetEl.classList.add(isForward ? 'enter-right' : 'enter-left');
+
+  // 强制回流后触发进入
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      targetEl.classList.remove('enter-right', 'enter-left');
+      targetEl.classList.add('active');
+
+      if (currentEl) {
+        // 等过渡结束后移除退出类
+        setTimeout(() => {
+          currentEl.classList.remove('exit-left', 'exit-right');
+          _viewAnimating = false;
+        }, 230);
+      } else {
+        _viewAnimating = false;
+      }
+    });
+  });
+
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === viewId);
+  });
+
+  _currentViewId = viewId;
+
+  if (viewId === 'habitsView') renderHabits();
+  if (viewId === 'goalsView') renderGoals();
+  if (viewId === 'templatesView') renderTemplates();
+}
+
+// ============================================================
+// 初始化
+// ============================================================
 async function init() {
   settingsVersionSpan.textContent = VERSION;
 
@@ -1077,6 +1854,9 @@ async function init() {
     subtasks: t.subtasks || [],
     priority: t.priority || null
   }));
+  habits = await window.electronAPI.loadHabits();
+  templates = await window.electronAPI.loadTemplates();
+  goals = await window.electronAPI.loadGoals();
   updateSortDisplay(currentSort);
   render();
   log('应用初始化完成');
@@ -1154,6 +1934,102 @@ document.addEventListener('DOMContentLoaded', () => {
   initCustomSortSelect();
   init();
 
+  // 侧边栏导航切换
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
+
+  // 习惯追踪事件
+  document.getElementById('addHabitBtn')?.addEventListener('click', handleAddHabit);
+
+  document.getElementById('habitsList')?.addEventListener('click', async (e) => {
+    const card = e.target.closest('.habit-card');
+    if (!card) return;
+    const id = card.dataset.habitId;
+    if (e.target.closest('.checkin-habit-btn')) {
+      await handleCheckinHabit(id);
+    } else if (e.target.closest('.edit-habit-btn')) {
+      await handleEditHabit(id);
+    } else if (e.target.closest('.delete-habit-btn')) {
+      await handleDeleteHabit(id);
+    } else if (e.target.closest('.habit-checkin-day:not(.empty)')) {
+      const day = e.target.closest('.habit-checkin-day');
+      handleHabitDateClick(id, day.dataset.date);
+    }
+  });
+
+  // 目标(OKR)事件
+  document.getElementById('addGoalBtn')?.addEventListener('click', handleAddGoal);
+
+  document.getElementById('goalsList')?.addEventListener('click', async (e) => {
+    const card = e.target.closest('.goal-card');
+    if (!card) return;
+    const id = card.dataset.goalId;
+    if (e.target.closest('.edit-goal-btn')) {
+      await handleEditGoal(id);
+    } else if (e.target.closest('.delete-goal-btn')) {
+      await handleDeleteGoal(id);
+    } else if (e.target.closest('.add-kr-btn')) {
+      await handleAddKr(id);
+    }
+  });
+
+  // 滑条拖拽中：仅本地更新 UI，不触发热重绘
+  document.getElementById('goalsList')?.addEventListener('input', (e) => {
+    if (e.target.classList.contains('kr-progress-slider')) {
+      const val = parseInt(e.target.value, 10);
+      // 更新百分比文字
+      const pctSpan = e.target.parentElement.querySelector('.kr-pct');
+      if (pctSpan) {
+        pctSpan.textContent = val + '%';
+        pctSpan.style.color = val >= 100 ? 'var(--success-color, #2e7d32)' : 'var(--text-primary)';
+      }
+      // 更新所属目标的进度条和头部统计
+      const goalCard = e.target.closest('.goal-card');
+      if (goalCard) {
+        const goalId = goalCard.dataset.goalId;
+        const goal = goals.find(g => g.id === goalId);
+        if (goal) {
+          // 找到被拖拽的 KR 并更新内存中的进度
+          const kr = goal.keyResults.find(k => k.id === e.target.dataset.krId);
+          if (kr) kr.progress = val;
+          // 重新计算总体进度
+          const totalKr = goal.keyResults.length;
+          const completedKr = goal.keyResults.filter(k => k.progress >= 100).length;
+          const overallProgress = totalKr > 0 ? Math.round(goal.keyResults.reduce((s, k) => s + k.progress, 0) / totalKr) : 0;
+          // 更新进度条
+          const fill = goalCard.querySelector('.goal-progress-fill');
+          if (fill) fill.style.width = overallProgress + '%';
+          // 更新头部文字
+          const headerText = goalCard.querySelector('.goal-progress-text');
+          if (headerText) headerText.textContent = overallProgress + '% · ' + completedKr + '/' + totalKr + ' KR';
+        }
+      }
+    }
+  });
+
+  // 滑条释放后：保存数据
+  document.getElementById('goalsList')?.addEventListener('change', async (e) => {
+    if (e.target.classList.contains('kr-progress-slider')) {
+      const goalId = e.target.dataset.goalId;
+      const krId = e.target.dataset.krId;
+      await handleKrProgressChange(goalId, krId, e.target.value);
+    }
+  });
+
+  // 模板事件
+  document.getElementById('saveAsTemplateBtn')?.addEventListener('click', handleSaveAsTemplate);
+
+  document.getElementById('templatesList')?.addEventListener('click', async (e) => {
+    if (e.target.closest('.apply-template-btn')) {
+      const btn = e.target.closest('.apply-template-btn');
+      await handleApplyTemplate(btn.dataset.templateId);
+    } else if (e.target.closest('.delete-template-btn')) {
+      const btn = e.target.closest('.delete-template-btn');
+      await handleDeleteTemplate(btn.dataset.templateId);
+    }
+  });
+
   addBtn.addEventListener('click', addTask);
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
 
@@ -1204,22 +2080,30 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (e.target.closest('.toggle-subtasks-btn')) {
-      if (expandedTaskIds.has(id)) {
+      const container = item.querySelector('.subtask-container');
+      if (!container) return;
+      const isCurrentlyExpanded = container.style.display === 'block';
+      if (isCurrentlyExpanded) {
+        container.style.display = 'none';
         expandedTaskIds.delete(id);
       } else {
+        container.style.display = 'block';
         expandedTaskIds.add(id);
       }
-      render();
       return;
     }
     const mainArea = e.target.closest('.todo-main');
     if (mainArea && !e.target.closest('.todo-actions') && !e.target.closest('input') && !e.target.closest('.tag')) {
-      if (expandedTaskIds.has(id)) {
+      const container = item.querySelector('.subtask-container');
+      if (!container) return;
+      const isCurrentlyExpanded = container.style.display === 'block';
+      if (isCurrentlyExpanded) {
+        container.style.display = 'none';
         expandedTaskIds.delete(id);
       } else {
+        container.style.display = 'block';
         expandedTaskIds.add(id);
       }
-      render();
       return;
     }
     if (e.target.closest('.add-subtask-btn')) {
@@ -1229,14 +2113,34 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!title) return;
       const task = tasks.find(t => t.id === id);
       if (task) {
+        const newStId = Date.now().toString() + Math.random().toString(36).substr(2, 4);
         task.subtasks.push({
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+          id: newStId,
           title,
           completed: false
         });
         expandedTaskIds.add(id);
         await window.electronAPI.saveTodos(tasks);
-        render();
+        // 局部插入新子任务 DOM，不触发全量重绘
+        const list = container.querySelector('.subtask-list') || container.querySelector('ul');
+        if (list) {
+          const li = document.createElement('li');
+          li.className = 'subtask-item';
+          li.dataset.subtaskId = newStId;
+          li.innerHTML = `<input type="checkbox" class="subtask-checkbox">
+            <span class="subtask-title">${escapeHtml(title)}</span>
+            <div class="subtask-actions">
+              <button class="icon-btn edit-subtask-btn" title="编辑子任务">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="icon-btn delete-subtask-btn" title="删除子任务">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>`;
+          list.appendChild(li);
+        }
+        input.value = '';
+        showToast('子任务已添加');
       }
       return;
     }
@@ -1247,7 +2151,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (task) {
         task.subtasks = task.subtasks.filter(st => st.id !== subtaskId);
         await window.electronAPI.saveTodos(tasks);
-        render();
+        // 局部删除 DOM 节点，不触发全量重绘
+        subtaskItem.remove();
       }
       return;
     }
@@ -1334,7 +2239,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (subtask) {
         subtask.completed = e.target.checked;
         await window.electronAPI.saveTodos(tasks);
-        render();
+        // 只更新父任务的完成状态计数，不触发全量重绘
+        const completedCount = task.subtasks.filter(st => st.completed).length;
+        const totalSubtask = task.subtasks.length;
+        // 可选：更新任务计数显示
       }
       return;
     }
@@ -1355,22 +2263,53 @@ document.addEventListener('DOMContentLoaded', () => {
   saveEditBtn.addEventListener('click', saveEdit);
   closeModalBtn.addEventListener('click', () => editModal.close());
 
+  let previousViewId = 'tasksView';
+
+  function openSettingsView() {
+    const activePanel = document.querySelector('.view-panel.active');
+    if (activePanel && activePanel.id !== 'settingsView') {
+      previousViewId = activePanel.id;
+    }
+    // 设置视图平滑过渡到设置
+    if (activePanel && activePanel.id !== 'settingsView') {
+      activePanel.classList.remove('active');
+      activePanel.classList.add('exit-left');
+      setTimeout(() => {
+        activePanel.classList.remove('exit-left');
+      }, 280);
+    }
+    // 清除所有导航按钮的 active 状态，避免误填充
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    settingsView.classList.remove('enter-right', 'enter-left', 'exit-left', 'exit-right');
+    settingsView.classList.add('active');
+    settingsBtn.classList.add('active');
+    log('打开设置面板');
+  }
+
+  function closeSettingsView() {
+    settingsView.classList.remove('active');
+    settingsBtn.classList.remove('active');
+    // 恢复之前视图的导航按钮 active 状态
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === previousViewId);
+    });
+    const target = document.getElementById(previousViewId);
+    if (target) {
+      target.classList.remove('active', 'enter-right', 'enter-left', 'exit-left', 'exit-right');
+      target.classList.add('active');
+    }
+    log('关闭设置面板');
+  }
+
   settingsBtn.addEventListener('click', () => {
     if (settingsView.classList.contains('active')) {
-      settingsView.classList.remove('active');
-      tasksView.classList.add('active');
-      log('通过点击设置按钮关闭设置面板');
+      closeSettingsView();
     } else {
-      tasksView.classList.remove('active');
-      settingsView.classList.add('active');
-      log('打开设置面板');
+      openSettingsView();
     }
   });
 
-  closeSettingsViewBtn.addEventListener('click', () => {
-    settingsView.classList.remove('active');
-    tasksView.classList.add('active');
-  });
+  closeSettingsViewBtn.addEventListener('click', closeSettingsView);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -1380,14 +2319,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       if (customDialog.open) {
+        if (_activeDialogCleanup) _activeDialogCleanup();
         customDialog.close();
         e.preventDefault();
         return;
       }
       if (settingsView.classList.contains('active')) {
-        settingsView.classList.remove('active');
-        tasksView.classList.add('active');
-        log('通过 ESC 键关闭设置面板');
+        closeSettingsView();
         e.preventDefault();
       }
     }

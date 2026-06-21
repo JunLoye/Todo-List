@@ -81,7 +81,35 @@
     font-weight: 500;
   }
   
-  .sidebar-footer {
+  .filter-group.submenu {
+  display: none;
+  padding: 2px 0 2px 24px;
+  border-left: 2px solid var(--border-color);
+  margin-left: 4px;
+}
+
+.nav-btn[data-view="tasksView"].active + .filter-group.submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-group.submenu .filter-btn {
+  padding: 7px 12px;
+  font-size: 0.85rem;
+}
+
+[data-compact="true"] .filter-group.submenu {
+  padding: 2px 0 2px 20px;
+  margin-left: 2px;
+}
+
+[data-compact="true"] .filter-group.submenu .filter-btn {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+}
+
+.sidebar-footer {
     margin-top: auto;
   }
   
@@ -106,6 +134,18 @@
     border-color: var(--text-secondary);
     transform: translateY(-1px);
   }
+  
+  .settings-entry-btn.active {
+    background: var(--filter-active-bg);
+    color: var(--filter-active-color);
+    border-color: var(--filter-active-color);
+    font-weight: 500;
+  }
+  
+  .settings-entry-btn.active:hover {
+    background: var(--filter-active-bg);
+    transform: none;
+  }
 
   .filter-btn {
     display: flex;
@@ -126,6 +166,48 @@
     background: var(--filter-active-color);
     color: var(--filter-active-bg);
   }
+
+/* ========== 侧边栏导航 ========== */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 8px 0;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-btn:hover {
+  background: var(--btn-secondary-hover-bg);
+  transform: translateX(2px);
+}
+
+.nav-btn.active {
+  background: var(--filter-active-bg);
+  color: var(--filter-active-color);
+  font-weight: 500;
+}
+
+[data-compact="true"] .nav-btn {
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+}
 
 /* ========== 紧凑模式 ========== */
 [data-compact="true"] .sidebar {
@@ -173,6 +255,12 @@
 }
 
 [data-compact="true"] .sidebar .settings-entry-btn {
+  padding: 7px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+}
+
+[data-compact="true"] .sidebar .settings-entry-btn.active {
   padding: 7px;
   font-size: 0.82rem;
   border-radius: 6px;

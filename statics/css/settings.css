@@ -151,34 +151,6 @@
   border-color: #b71c1c;
 }
 
-.content-area {
-  position: relative;
-  overflow: hidden;
-}
-
-.view-panel {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 20px;
-  overflow-y: auto;
-  opacity: 0;
-  transform: scale(0.95);
-  visibility: hidden;
-  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
-  background: var(--bg-body);
-  z-index: 1;
-}
-
-.view-panel.active {
-  opacity: 1;
-  transform: scale(1);
-  visibility: visible;
-  z-index: 2;
-}
-
 #checkUpdateBtn {
   background: transparent;
   color: #4caf50;

@@ -16,12 +16,222 @@
 	flex-direction: column;
 	opacity: 0;
 	pointer-events: none;
-	transition: opacity 0.2s ease;
+	background: var(--bg-body);
+	z-index: 1;
+	transform: translateX(24px);
+	transition: transform 0.25s ease, opacity 0.2s ease;
 }
 
 .view-panel.active {
 	opacity: 1;
 	pointer-events: auto;
+	z-index: 2;
+	transform: translateX(0);
+}
+
+.view-panel.exit-left {
+	transform: translateX(-24px);
+	opacity: 0;
+	z-index: 1;
+}
+
+.view-panel.exit-right {
+	transform: translateX(24px);
+	opacity: 0;
+	z-index: 1;
+}
+
+.view-panel.enter-right {
+	transform: translateX(24px);
+	opacity: 0;
+}
+
+.view-panel.enter-left {
+	transform: translateX(-24px);
+	opacity: 0;
+}
+
+/* ========== 任务项入场动画 ========== */
+@keyframes todoItemIn {
+	from {
+		opacity: 0;
+		transform: translateY(16px) scale(0.97);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+/* 仅首次渲染播放入场动画，后续操作（展开/折叠等）不重复播放 */
+.todo-list.initial-render .todo-item {
+	animation: todoItemIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.todo-list.initial-render .todo-item:nth-child(1) { animation-delay: 0.00s; }
+.todo-list.initial-render .todo-item:nth-child(2) { animation-delay: 0.03s; }
+.todo-list.initial-render .todo-item:nth-child(3) { animation-delay: 0.06s; }
+.todo-list.initial-render .todo-item:nth-child(4) { animation-delay: 0.09s; }
+.todo-list.initial-render .todo-item:nth-child(5) { animation-delay: 0.12s; }
+.todo-list.initial-render .todo-item:nth-child(6) { animation-delay: 0.15s; }
+.todo-list.initial-render .todo-item:nth-child(7) { animation-delay: 0.18s; }
+.todo-list.initial-render .todo-item:nth-child(8) { animation-delay: 0.21s; }
+.todo-list.initial-render .todo-item:nth-child(9) { animation-delay: 0.24s; }
+.todo-list.initial-render .todo-item:nth-child(10) { animation-delay: 0.27s; }
+
+/* ========== 进度条动画 - 仅首次渲染 ========== */
+@keyframes progressFill {
+	from { width: 0; }
+}
+.goal-progress-fill.animate {
+	animation: progressFill 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ========== 按钮微交互动效（减小位移防震动） ========== */
+.primary-btn,
+.secondary-btn,
+.danger-btn {
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.primary-btn:hover,
+.secondary-btn:hover,
+.danger-btn:hover {
+	transform: translateY(-1px);
+	box-shadow: none;
+}
+.primary-btn:active,
+.secondary-btn:active,
+.danger-btn:active {
+	transform: translateY(0);
+}
+
+/* ========== 卡片悬浮动效（减小平移防震动） ========== */
+.habit-card,
+.goal-card,
+.template-card {
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.habit-card:hover,
+.goal-card:hover,
+.template-card:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+/* ========== 打卡网格格子动效 ========== */
+.habit-checkin-day {
+	transition: transform 0.12s ease, background 0.12s ease;
+}
+.habit-checkin-day:hover {
+	transform: scale(1.2);
+	z-index: 1;
+}
+
+/* ========== 滑条自定义样式 ========== */
+input[type="range"].kr-progress-slider {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 100%;
+	height: 6px;
+	border-radius: 3px;
+	background: var(--border-color);
+	outline: none;
+	cursor: pointer;
+	transition: background 0.2s ease;
+}
+input[type="range"].kr-progress-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--btn-primary-bg);
+	border: 2px solid var(--card-bg);
+	box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+	cursor: pointer;
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+input[type="range"].kr-progress-slider::-webkit-slider-thumb:hover {
+	transform: scale(1.15);
+	box-shadow: 0 3px 10px rgba(0,0,0,0.20);
+}
+input[type="range"].kr-progress-slider::-webkit-slider-thumb:active {
+	transform: scale(0.95);
+}
+input[type="range"].kr-progress-slider::-moz-range-thumb {
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--btn-primary-bg);
+	border: 2px solid var(--card-bg);
+	cursor: pointer;
+}
+
+/* ========== Toast 增强动效 ========== */
+.toast {
+	animation: toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes toastSlideIn {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+/* ========== 弹窗动效 ========== */
+.modal,
+.custom-dialog {
+	animation: modalFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes modalFadeIn {
+	from {
+		opacity: 0;
+		transform: translate(-50%, -48%) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+	}
+}
+.modal::backdrop,
+.custom-dialog::backdrop {
+	animation: backdropFadeIn 0.2s ease forwards;
+}
+@keyframes backdropFadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+/* ========== Checkbox 动效 ========== */
+.todo-checkbox,
+.subtask-checkbox {
+	transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+	cursor: pointer;
+}
+.todo-checkbox:hover,
+.subtask-checkbox:hover {
+	transform: scale(1.15);
+}
+
+/* ========== 数字标签跳变动效 ========== */
+.filter-count {
+	transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.filter-count.update {
+	animation: countPop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes countPop {
+	0% { transform: scale(1); }
+	50% { transform: scale(1.3); }
+	100% { transform: scale(1); }
+}
+
+/* ========== 滑条数值显示动画 ========== */
+.kr-progress-value {
+	transition: all 0.2s ease;
 }
 
 .input-section {
@@ -29,6 +239,7 @@
 	gap: 12px;
 	margin-bottom: 20px;
 	align-items: center;
+	flex-wrap: wrap;
 }
 
 .input-wrapper {
@@ -65,6 +276,7 @@ select:focus {
 	display: flex;
 	gap: 12px;
 	margin-bottom: 16px;
+	flex-wrap: wrap;
 }
 
 .input-extras .input-wrapper {
@@ -94,6 +306,7 @@ select:focus {
 	align-items: flex-start;
 	margin-bottom: 16px;
 	gap: 12px;
+	flex-wrap: wrap;
 }
 
 .toolbar-left {
@@ -315,6 +528,21 @@ select:focus {
 	width: 14px;
 	height: 14px;
 	color: var(--text-secondary);
+}
+
+#sortSelectedText .option-icon {
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	color: var(--text-secondary);
+}
+
+.option-item .option-dir {
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	margin-left: auto;
+	color: var(--filter-active-color);
 }
 
 .primary-btn {
