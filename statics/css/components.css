@@ -345,8 +345,7 @@ input:checked + .slider::before {
 
 /* ========== 习惯追踪 ========== */
 .habits-toolbar,
-.goals-toolbar,
-.templates-toolbar {
+.goals-toolbar {
   display: flex;
   gap: 10px;
   margin-bottom: 16px;
@@ -559,45 +558,243 @@ input:checked + .slider::before {
   border-top: 1px solid var(--border-color);
 }
 
-/* ========== 模板 ========== */
-.template-card {
+/* ========== 归档卡片 ========== */
+.archive-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
   transition: all 0.2s ease;
 }
 
-.template-card:hover {
+.archive-card:hover {
   border-color: var(--text-secondary);
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.template-info {
+.archive-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.archive-header svg {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.archive-info {
   flex: 1;
   min-width: 0;
 }
 
-.template-name {
+.archive-name {
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-primary);
-  margin-bottom: 2px;
 }
 
-.template-meta {
+.archive-meta {
   font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.archive-task-list {
+  background: var(--bg-sidebar);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.archive-task-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.archive-task-item:last-child {
+  border-bottom: none;
+}
+
+.archive-task-more {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  font-style: italic;
+}
+
+.archive-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ========== 更新日志 ========== */
+.view-header-row {
+  display: flex;
+  flex-direction: row !important;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.changelog-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.changelog-toolbar .primary-btn {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.changelog-toolbar .primary-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.changelog-status {
+  font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.template-actions {
+.changelog-day {
+  margin-bottom: 20px;
+}
+
+.changelog-day-header {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  background: var(--bg-body);
+  z-index: 1;
+}
+
+.changelog-item {
   display: flex;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.changelog-item:hover {
+  background: var(--btn-secondary-hover-bg);
+}
+
+.changelog-commit-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 70px;
   flex-shrink: 0;
+}
+
+.changelog-sha {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--border-color);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.changelog-author {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.changelog-message {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex: 1;
+  word-break: break-word;
+}
+
+/* 版本更新日志卡片 */
+.changelog-version {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.changelog-version:hover {
+  border-color: var(--text-secondary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.changelog-version-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.changelog-version-header svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.changelog-version-tag {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.changelog-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.changelog-body {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 8px 0;
+  border-top: 1px dashed var(--border-color);
+  margin-top: 8px;
+}
+
+.changelog-body p {
+  margin: 4px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.changelog-body p::before {
+  position: absolute;
+  left: 4px;
+  color: var(--text-secondary);
+}
+
+.changelog-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
 }
 
 /* ========== 空状态 ========== */
@@ -620,7 +817,7 @@ input:checked + .slider::before {
 /* ========== 紧凑模式适配 ========== */
 [data-compact="true"] .habit-card,
 [data-compact="true"] .goal-card,
-[data-compact="true"] .template-card {
+[data-compact="true"] .archive-card {
   padding: 12px 14px;
   border-radius: 8px;
 }

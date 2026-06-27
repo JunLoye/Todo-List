@@ -107,12 +107,12 @@
 /* ========== 卡片悬浮动效（减小平移防震动） ========== */
 .habit-card,
 .goal-card,
-.template-card {
+.archive-card {
 	transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .habit-card:hover,
 .goal-card:hover,
-.template-card:hover {
+.archive-card:hover {
 	transform: translateY(-1px);
 	box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
@@ -316,24 +316,56 @@ select:focus {
 	align-items: center;
 }
 
+.toolbar-right {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-left: auto;
+}
+
 .search-wrapper {
+	position: relative;
 	display: flex;
 	align-items: center;
-	gap: 6px;
 	flex: 1 1 320px;
+}
+
+.search-wrapper > svg {
+	position: absolute;
+	left: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: none;
+	color: var(--text-secondary);
+	flex-shrink: 0;
+	z-index: 1;
 }
 
 .search-wrapper input {
 	flex: 1;
+	padding-left: 32px;
+	padding-right: 36px;
 }
 
 #clearSearchBtn {
-	width: 32px;
-	height: 32px;
-	font-size: 1rem;
+	position: absolute;
+	right: 4px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 26px;
+	height: 26px;
+	font-size: 0.85rem;
 	line-height: 1;
 	padding: 0;
-	border-radius: 10px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#clearSearchBtn svg {
+	width: 14px;
+	height: 14px;
 }
 
 .tag-filter-bar {
@@ -733,6 +765,11 @@ select:focus {
 .icon-btn.delete-btn:hover {
 	color: var(--danger-color);
 	background: var(--danger-hover-bg);
+}
+
+.icon-btn.archive-task-btn:hover {
+	color: var(--btn-primary-bg);
+	background: var(--btn-secondary-hover-bg);
 }
 
 .todo-tags {
@@ -1348,13 +1385,20 @@ select#logLevelSelect {
   font-size: 0.78rem;
 }
 
-[data-compact="true"] .search-wrapper {
-  gap: 4px;
+[data-compact="true"] .search-wrapper input {
+  padding-left: 28px;
+  padding-right: 32px;
 }
 [data-compact="true"] #clearSearchBtn {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
+  right: 3px;
+}
+
+[data-compact="true"] #clearSearchBtn svg {
+  width: 12px;
+  height: 12px;
 }
 
 [data-compact="true"] .select-options .option-item {

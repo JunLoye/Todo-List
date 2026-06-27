@@ -1,6 +1,7 @@
 const todoListEl = document.getElementById('todoList');
 const taskInput = document.getElementById('taskInput');
 const addBtn = document.getElementById('addBtn');
+const archiveBtn = document.getElementById('archiveBtn');
 const clearCompletedBtn = document.getElementById('clearCompletedBtn');
 const filterBtns = document.querySelectorAll('.filter-btn');
 const totalSpan = document.getElementById('totalCount');
@@ -19,6 +20,7 @@ const includeTodayToggle = document.getElementById('includeTodayToggle');
 const themeBtns = document.querySelectorAll('.theme-btn');
 const dueDateEnableToggle = document.getElementById('dueDateEnableToggle');
 const compactModeToggle = document.getElementById('compactModeToggle');
+const archiveConfirmToggle = document.getElementById('archiveConfirmToggle');
 const debugModeToggle = document.getElementById('debugModeToggle');
 const importDataBtn = document.getElementById('importDataBtn');
 const exportDataBtn = document.getElementById('exportDataBtn');
@@ -44,6 +46,10 @@ const sortSelectedText = document.getElementById('sortSelectedText');
 const customSelect = document.getElementById('customSortSelect');
 const sortDueOpt = document.getElementById('sortDueOpt');
 
+const refreshChangelogBtn = document.getElementById('refreshChangelogBtn');
+const changelogList = document.getElementById('changelogList');
+const changelogStatus = document.getElementById('changelogStatus');
+
 const editModal = document.getElementById('editModal');
 const editTitle = document.getElementById('editTitle');
 const editTags = document.getElementById('editTags');
@@ -61,7 +67,7 @@ const toastContainer = document.getElementById('toastContainer');
 let _activeDialogCleanup = null;
 let _activeDialogResolve = null;
 
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 
 function compareVersions(a, b) {
   const norm = (v) => String(v).trim().replace(/^v/, '').split('-')[0];
@@ -554,6 +560,51 @@ function render() {
   }
   let filtered = [...tasks];
 
+  // 空状态提示
+  if (filtered.length === 0) {
+    let emptyIcon, emptyMsg;
+    if (currentSearch || activeTagFilter) {
+      emptyIcon = `<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);opacity:0.5;">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <line x1="8" y1="11" x2="14" y2="11"/>
+      </svg>`;
+      emptyMsg = currentSearch ? `未找到包含「${escapeHtml(currentSearch)}」的任务` : '该标签下没有任务';
+    } else if (currentFilter === 'completed') {
+      emptyIcon = `<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);opacity:0.5;">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>`;
+      emptyMsg = '还没有已完成的任务，继续加油！';
+    } else {
+      emptyIcon = `<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);opacity:0.5;">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <line x1="3" y1="9" x2="21" y2="9"/>
+        <line x1="9" y1="3" x2="9" y2="21"/>
+        <polyline points="14 13 16 15 20 11"/>
+      </svg>`;
+      emptyMsg = '还没有任务，输入内容添加第一个吧';
+    }
+    todoListEl.innerHTML = `<div class="empty-state" style="margin-top:60px;">${emptyIcon}<p style="margin-top:12px;color:var(--text-secondary);">${emptyMsg}</p></div>`;
+    // 更新计数
+    const updateCount = (el, val) => {
+      if (parseInt(el.textContent, 10) !== val) {
+        el.textContent = val;
+        el.classList.remove('update');
+        void el.offsetWidth;
+        el.classList.add('update');
+      }
+    };
+    updateCount(totalSpan, 0);
+    updateCount(activeSpan, 0);
+    updateCount(completedSpan, 0);
+    renderTagFilterList();
+    if (!_initialRenderDone) {
+      _initialRenderDone = true;
+      setTimeout(() => { todoListEl.classList.remove('initial-render'); }, 350);
+    }
+    return;
+  }
+
   if (currentFilter === 'active') {
     filtered = filtered.filter(t => !t.completed);
   } else if (currentFilter === 'completed') {
@@ -702,6 +753,11 @@ function render() {
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </button>
+          <button class="icon-btn archive-task-btn" title="归档">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><line x1="10" y1="12" x2="14" y2="12"/>
+            </svg>
+          </button>
           <button class="icon-btn edit-btn" title="编辑">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -807,9 +863,10 @@ function updateSortDisplay(value) {
     `<polyline points="6 9 12 3 18 9"${isAsc ? '' : ' stroke-opacity="0.3"'}/>` +
     `<polyline points="6 15 12 21 18 15"${isAsc ? ' stroke-opacity="0.3"' : ''}/>` +
     `</svg>`;
-  // 触发器: [字段图标] 文本 [方向箭头]
-  sortSelectedText.innerHTML = `${fieldSvgHtml}${label}${dirSvg}`;
-  // 更新选项: 移除所有选项的右侧方向图标，给活动选项添加
+  sortSelectedText.innerHTML = '';
+  sortSelectedText.insertAdjacentHTML('beforeend', fieldSvgHtml);
+  sortSelectedText.appendChild(document.createTextNode(label));
+  sortSelectedText.insertAdjacentHTML('beforeend', dirSvg);
   sortOptions.querySelectorAll('.option-item').forEach(item => {
     item.classList.remove('active');
     const existingDir = item.querySelector('.option-dir');
@@ -1072,6 +1129,15 @@ function loadConfig() {
   APP_CONFIG.dueDateEnabled = savedDue !== null ? savedDue === 'true' : true;
   dueDateEnableToggle.checked = APP_CONFIG.dueDateEnabled;
   applyDueDateFeatureState();
+
+  const archiveConfirm = localStorage.getItem('todo_archive_confirm');
+  if (archiveConfirmToggle) {
+    archiveConfirmToggle.checked = archiveConfirm !== 'false';
+    archiveConfirmToggle.addEventListener('change', (e) => {
+      localStorage.setItem('todo_archive_confirm', e.target.checked);
+      log(`归档确认弹窗: ${e.target.checked ? '启用' : '禁用'}`);
+    });
+  }
 
   const debug = localStorage.getItem('todo_debug_mode') === 'true';
   APP_CONFIG.debugMode = debug;
@@ -1627,139 +1693,334 @@ async function handleAddKr(goalId) {
 }
 
 // ============================================================
-// 模板功能
+// 归档功能
 // ============================================================
-let templates = [];
+let archives = [];
 
-function renderTemplates() {
-  const container = document.getElementById('templatesList');
+function renderArchives() {
+  const container = document.getElementById('archiveList');
   if (!container) return;
-  if (!templates.length) {
+  if (!archives.length) {
     container.innerHTML = `<div class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <p>还没有模板，先将任务列表保存为模板吧</p>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+      <p>暂无归档记录，完成任务后一键归档吧</p>
     </div>`;
     return;
   }
-  container.innerHTML = templates.map(tpl =>
-    `<div class="template-card" data-template-id="${tpl.id}">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      <div class="template-info">
-        <div class="template-name">${escapeHtml(tpl.name)}</div>
-        <div class="template-meta">${tpl.taskCount} 个任务 · ${new Date(tpl.createdAt).toLocaleDateString('zh-CN')}</div>
+  const sorted = [...archives].reverse();
+  container.innerHTML = sorted.map(arch =>
+    `<div class="archive-card" data-archive-id="${arch.id}">
+      <div class="archive-header">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><line x1="10" y1="12" x2="14" y2="12"/>
+        </svg>
+        <div class="archive-info">
+          <div class="archive-name">归档于 ${new Date(arch.archivedAt).toLocaleString('zh-CN')}</div>
+          <div class="archive-meta">${arch.taskCount} 个已完成任务</div>
+        </div>
       </div>
-      <div class="template-actions">
-        <button class="primary-btn apply-template-btn" data-template-id="${tpl.id}" style="padding:6px 14px;font-size:0.85rem;">应用</button>
-        <button class="icon-btn delete-template-btn" data-template-id="${tpl.id}" title="删除模板">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <div class="archive-task-list">
+        ${arch.tasks.slice(0, 10).map(t => `<div class="archive-task-item">${escapeHtml(t.title)}</div>`).join('')}
+        ${arch.tasks.length > 10 ? `<div class="archive-task-more">...还有 ${arch.tasks.length - 10} 个任务</div>` : ''}
+      </div>
+      <div class="archive-actions">
+        <button class="secondary-btn restore-archive-btn" data-archive-id="${arch.id}" style="padding:6px 14px;font-size:0.85rem;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4"/><polyline points="10 3 15 8 10 13"/><line x1="15" y1="3" x2="15" y2="8"/></svg>
+          恢复全部
+        </button>
+        <button class="danger-btn delete-archive-btn" data-archive-id="${arch.id}" style="padding:6px 14px;font-size:0.85rem;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          删除
         </button>
       </div>
     </div>`
   ).join('');
 }
 
-async function saveTemplatesAndRender() {
-  await window.electronAPI.saveTemplates(templates);
-  renderTemplates();
+async function saveArchivesAndRender() {
+  await window.electronAPI.saveArchives(archives);
+  renderArchives();
 }
 
-async function handleSaveAsTemplate() {
-  if (!tasks.length) {
-    showToast('没有任务可以保存为模板', 'error');
+async function handleArchiveSingleTask(task) {
+  const skipConfirm = localStorage.getItem('todo_archive_confirm') === 'false';
+  if (!skipConfirm) {
+    const confirm = await showConfirmDialog(`将任务「${task.title}」归档？`);
+    if (!confirm) return;
+  }
+
+  const archiveEntry = {
+    id: Date.now().toString(),
+    tasks: [{
+      id: task.id,
+      title: task.title,
+      tags: [...(task.tags || [])],
+      priority: task.priority || null,
+      dueDate: task.dueDate || '',
+      subtasks: [...(task.subtasks || [])],
+      createdAt: task.createdAt,
+      completed: true
+    }],
+    taskCount: 1,
+    archivedAt: Date.now()
+  };
+
+  archives.push(archiveEntry);
+  tasks = tasks.filter(t => t.id !== task.id);
+  expandedTaskIds.delete(task.id);
+
+  await window.electronAPI.saveTodos(tasks);
+  await saveArchivesAndRender();
+  render();
+  showToast(`任务「${task.title}」已归档`);
+  log(`归档任务: ${task.title}`);
+}
+
+async function handleArchiveCompleted() {
+  const completedTasks = tasks.filter(t => t.completed);
+  if (!completedTasks.length) {
+    showToast('当前没有已完成的任务', 'error');
     return;
   }
-  // 清理之前残留的弹窗状态
-  if (_activeDialogCleanup) _activeDialogCleanup();
+  const skipConfirm = localStorage.getItem('todo_archive_confirm') === 'false';
+  if (!skipConfirm) {
+    const confirm = await showConfirmDialog(`确定要将 ${completedTasks.length} 个已完成任务归档吗？`);
+    if (!confirm) return;
+  }
 
-  const html = `
-    <div class="dialog-body-custom-inner">
-      <div class="input-wrapper">
-        <input type="text" id="templateNameInput" class="dialog-input" placeholder="模板名称，如：旅行打包清单">
-      </div>
-      <p class="dialog-hint">将保存当前全部 ${tasks.length} 个任务作为模板</p>
-    </div>
-  `;
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
-  const dialog = document.getElementById('customDialog');
-  dialogMessage.textContent = '保存为模板';
-  dialogMessage.style.display = 'none';
-  dialogIconPath.parentElement.style.display = 'none';
-  dialogConfirmBtn.style.background = 'var(--btn-primary-bg)';
-  dialogConfirmBtn.className = 'primary-btn';
-  const existingBody = dialog.querySelector('.dialog-body-custom');
-  if (existingBody) existingBody.remove();
-  const body = document.createElement('div');
-  body.className = 'dialog-body-custom';
-  body.appendChild(tempDiv.firstElementChild);
-  dialog.querySelector('.dialog-content').insertBefore(body, dialog.querySelector('.dialog-footer'));
-
-  const getName = () => new Promise(resolve => {
-    _activeDialogResolve = resolve;
-    const onConfirm = () => { const name = document.getElementById('templateNameInput')?.value.trim() || null; cleanup(); resolve(name); };
-    const onCancel = () => { cleanup(); resolve(null); };
-    const cleanup = () => {
-      _activeDialogCleanup = null;
-      _activeDialogResolve = null;
-      dialogConfirmBtn.removeEventListener('click', onConfirm);
-      dialogCancelBtn.removeEventListener('click', onCancel);
-      dialog.close();
-      dialogMessage.style.display = '';
-      dialogIconPath.parentElement.style.display = '';
-      if (body) body.remove();
-    };
-    _activeDialogCleanup = cleanup;
-    dialogConfirmBtn.addEventListener('click', onConfirm);
-    dialogCancelBtn.addEventListener('click', onCancel);
-    dialog.showModal();
-  });
-
-  const name = await getName();
-  if (!name) return;
-  const templateTasks = tasks.map(t => ({
-    title: t.title,
-    tags: [...(t.tags || [])],
-    priority: t.priority || null
-  }));
-  templates.push({
+  const archiveEntry = {
     id: Date.now().toString(),
-    name,
-    tasks: templateTasks,
-    taskCount: templateTasks.length,
-    createdAt: Date.now()
-  });
-  await saveTemplatesAndRender();
-  showToast(`模板「${name}」已保存`);
+    tasks: completedTasks.map(t => ({
+      id: t.id,
+      title: t.title,
+      tags: [...(t.tags || [])],
+      priority: t.priority || null,
+      dueDate: t.dueDate || '',
+      subtasks: [...(t.subtasks || [])],
+      createdAt: t.createdAt,
+      completed: true
+    })),
+    taskCount: completedTasks.length,
+    archivedAt: Date.now()
+  };
+
+  archives.push(archiveEntry);
+  tasks = tasks.filter(t => !t.completed);
+  completedTasks.forEach(t => expandedTaskIds.delete(t.id));
+
+  await window.electronAPI.saveTodos(tasks);
+  await saveArchivesAndRender();
+  render();
+  showToast(`成功归档 ${completedTasks.length} 个已完成任务`);
+  log(`归档 ${completedTasks.length} 个已完成任务`);
 }
 
-async function handleApplyTemplate(id) {
-  const tpl = templates.find(t => t.id === id);
-  if (!tpl) return;
-  const confirm = await showConfirmDialog(`应用模板「${tpl.name}」将添加 ${tpl.taskCount} 个任务，是否继续？`);
+async function handleRestoreArchive(id) {
+  const arch = archives.find(a => a.id === id);
+  if (!arch) return;
+  const confirm = await showConfirmDialog(`确定要恢复此归档中的 ${arch.taskCount} 个任务吗？`);
   if (!confirm) return;
-  for (const t of tpl.tasks) {
+
+  for (const t of arch.tasks) {
     tasks.push({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+      id: t.id || (Date.now().toString() + Math.random().toString(36).substr(2, 4)),
       title: t.title,
       completed: false,
-      dueDate: '',
+      dueDate: t.dueDate || '',
       createdAt: Date.now(),
       tags: [...(t.tags || [])],
-      subtasks: [],
+      subtasks: [...(t.subtasks || [])],
       priority: t.priority || null
     });
   }
+
+  archives = archives.filter(a => a.id !== id);
   await window.electronAPI.saveTodos(tasks);
+  await saveArchivesAndRender();
   render();
-  showToast(`已应用模板「${tpl.name}」，添加 ${tpl.taskCount} 个任务`);
+  showToast(`已恢复 ${arch.taskCount} 个任务`);
+  log(`从归档恢复 ${arch.taskCount} 个任务`);
 }
 
-async function handleDeleteTemplate(id) {
-  const confirm = await showConfirmDialog('确定删除这个模板吗？', 'danger');
+async function handleDeleteArchive(id) {
+  const arch = archives.find(a => a.id === id);
+  if (!arch) return;
+  const confirm = await showConfirmDialog(`确定永久删除此归档（${arch.taskCount} 个任务）吗？此操作不可恢复！`, 'danger');
   if (!confirm) return;
-  templates = templates.filter(t => t.id !== id);
-  await saveTemplatesAndRender();
-  showToast('模板已删除');
+  archives = archives.filter(a => a.id !== id);
+  await saveArchivesAndRender();
+  showToast('归档已删除');
+  log(`删除归档 ${id}`);
+}
+
+const CHANGELOG_CACHE_KEY = 'todo_changelog_cache';
+const CHANGELOG_TIMESTAMP_KEY = 'todo_changelog_timestamp';
+const CHANGELOG_CACHE_DURATION = 24 * 60 * 60 * 1000;
+
+function getCachedChangelog() {
+  try {
+    const cached = localStorage.getItem(CHANGELOG_CACHE_KEY);
+    const timestamp = localStorage.getItem(CHANGELOG_TIMESTAMP_KEY);
+    if (cached && timestamp) {
+      const age = Date.now() - parseInt(timestamp, 10);
+      if (age < CHANGELOG_CACHE_DURATION) {
+        const data = JSON.parse(cached);
+        log(`使用缓存更新日志（${Math.round(age / 1000)}秒前缓存）`);
+        return data;
+      }
+    }
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
+function setCachedChangelog(data) {
+  try {
+    localStorage.setItem(CHANGELOG_CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(CHANGELOG_TIMESTAMP_KEY, String(Date.now()));
+  } catch (e) { /* ignore */ }
+}
+
+function clearChangelogCache() {
+  localStorage.removeItem(CHANGELOG_CACHE_KEY);
+  localStorage.removeItem(CHANGELOG_TIMESTAMP_KEY);
+}
+
+// ============================================================
+// 更新日志（从 GitHub Commits 拉取）
+// ============================================================
+async function renderChangelog(commits) {
+  const container = changelogList;
+  if (!container) return;
+  if (!commits || !commits.length) {
+    container.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <p>暂无更新记录</p>
+    </div>`;
+    return;
+  }
+
+  const versionCommits = commits.filter(c => {
+    const firstLine = c.commit.message.split('\n')[0].trim();
+    return /^v?\d+\.\d+\.\d+/.test(firstLine);
+  });
+
+  if (versionCommits.length > 0) {
+    versionCommits.sort((a, b) => new Date(b.commit.committer.date) - new Date(a.commit.committer.date));
+
+    container.innerHTML = versionCommits.map(c => {
+      const lines = c.commit.message.split('\n');
+      const versionLine = lines[0].trim();
+      const body = lines.slice(1).map(l => l.trim()).filter(l => l).join('\n');
+      const date = c.commit.committer.date.split('T')[0];
+      const sha = c.sha.substring(0, 7);
+      const author = c.commit.author.name;
+
+      return `<div class="changelog-version">
+        <div class="changelog-version-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          <span class="changelog-version-tag">${escapeHtml(versionLine)}</span>
+          <span class="changelog-date">${date}</span>
+        </div>
+        <div class="changelog-body">${escapeHtml(body).split('\n').map(line =>
+          line ? `<p>${line}</p>` : ''
+        ).join('')}</div>
+        <div class="changelog-meta">
+          <span class="changelog-sha">${sha}</span>
+          <span class="changelog-author">${escapeHtml(author)}</span>
+        </div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  const groups = {};
+  commits.forEach(c => {
+    const date = c.commit.committer.date.split('T')[0];
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(c);
+  });
+
+  container.innerHTML = Object.entries(groups).map(([date, items]) =>
+    `<div class="changelog-day">
+      <div class="changelog-day-header">${date}</div>
+      ${items.map(c => {
+        const fullMsg = c.commit.message;
+        const author = c.commit.author.name;
+        const sha = c.sha.substring(0, 7);
+        return `<div class="changelog-item">
+          <div class="changelog-commit-info">
+            <span class="changelog-sha">${sha}</span>
+            <span class="changelog-author">${escapeHtml(author)}</span>
+          </div>
+          <div class="changelog-message">${escapeHtml(fullMsg).split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')}</div>
+        </div>`;
+      }).join('')}
+    </div>`
+  ).join('');
+}
+
+async function handleRefreshChangelog(forceRefresh = false) {
+  if (!changelogList || !changelogStatus) return;
+
+  if (!forceRefresh) {
+    const cached = getCachedChangelog();
+    if (cached) {
+      await renderChangelog(cached);
+      const versionCount = cached.filter(c => /^v?\d+\.\d+\.\d+/.test(c.commit.message.split('\n')[0].trim())).length;
+      changelogStatus.textContent = versionCount > 0 ? `共 ${versionCount} 个版本` : `共 ${cached.length} 条提交`;
+      changelogStatus.style.color = 'var(--text-secondary)';
+      return;
+    }
+  }
+
+  changelogStatus.textContent = '正在拉取...';
+  changelogStatus.style.color = 'var(--text-secondary)';
+  if (refreshChangelogBtn) refreshChangelogBtn.disabled = true;
+
+  try {
+    const result = await window.electronAPI.fetchChangelog();
+    if (result.success) {
+      setCachedChangelog(result.data);
+      await renderChangelog(result.data);
+      const versionCount = result.data.filter(c => /^v?\d+\.\d+\.\d+/.test(c.commit.message.split('\n')[0].trim())).length;
+      changelogStatus.textContent = versionCount > 0 ? `共 ${versionCount} 个版本` : `共 ${result.data.length} 条提交`;
+      changelogStatus.style.color = 'var(--success-color, #2e7d32)';
+      log('更新日志拉取成功');
+    } else {
+      throw new Error(result.error || '拉取失败');
+    }
+  } catch (error) {
+    const fallback = getCachedChangelogFromStorage();
+    if (fallback) {
+      await renderChangelog(fallback);
+      const fbVersionCount = fallback.filter(c => /^v?\d+\.\d+\.\d+/.test(c.commit.message.split('\n')[0].trim())).length;
+      changelogStatus.textContent = fbVersionCount > 0 ? `离线缓存 · 共 ${fbVersionCount} 个版本` : `离线缓存 · 共 ${fallback.length} 条提交`;
+      changelogStatus.style.color = 'var(--text-secondary)';
+      showToast('网络不可用，已加载离线缓存', 'error');
+      log('更新日志拉取失败，使用离线缓存', 'warn');
+      return;
+    }
+    changelogList.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <p>拉取失败：${escapeHtml(error.message || '未知错误')}</p>
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px;">请检查网络连接后点击刷新按钮重试</p>
+    </div>`;
+    changelogStatus.textContent = '拉取失败';
+    changelogStatus.style.color = 'var(--toast-error-text, #c62828)';
+    log(`更新日志拉取失败: ${error.message}`, 'error');
+  } finally {
+    if (refreshChangelogBtn) refreshChangelogBtn.disabled = false;
+  }
+}
+
+function getCachedChangelogFromStorage() {
+  try {
+    const cached = localStorage.getItem(CHANGELOG_CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch (e) { /* ignore */ }
+  return null;
 }
 
 // ============================================================
@@ -1770,38 +2031,42 @@ let _viewAnimating = false;
 
 function switchView(viewId) {
   if (_viewAnimating || viewId === _currentViewId) return;
+
+  if (settingsView.classList.contains('active')) {
+    settingsView.classList.remove('active');
+    settingsBtn.classList.remove('active');
+  }
+
   _viewAnimating = true;
 
   const currentEl = document.getElementById(_currentViewId);
   const targetEl = document.getElementById(viewId);
   if (!targetEl) { _viewAnimating = false; return; }
 
-  // 计算方向
-  const viewOrder = ['tasksView', 'habitsView', 'goalsView', 'templatesView'];
+  const viewOrder = ['tasksView', 'habitsView', 'goalsView', 'archiveView', 'changelogView'];
   const curIdx = viewOrder.indexOf(_currentViewId);
   const tgtIdx = viewOrder.indexOf(viewId);
   const isForward = tgtIdx > curIdx;
 
-  // 设置当前面板退出动画
   if (currentEl) {
     currentEl.classList.remove('active', 'enter-right', 'enter-left');
     currentEl.classList.add(isForward ? 'exit-left' : 'exit-right');
   }
 
-  // 设置目标面板进入动画
   targetEl.classList.remove('exit-left', 'exit-right', 'enter-right', 'enter-left');
   targetEl.classList.add(isForward ? 'enter-right' : 'enter-left');
 
-  // 强制回流后触发进入
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       targetEl.classList.remove('enter-right', 'enter-left');
       targetEl.classList.add('active');
 
       if (currentEl) {
-        // 等过渡结束后移除退出类
+        currentEl.style.visibility = 'hidden';
+
         setTimeout(() => {
           currentEl.classList.remove('exit-left', 'exit-right');
+          currentEl.style.visibility = '';
           _viewAnimating = false;
         }, 230);
       } else {
@@ -1818,7 +2083,8 @@ function switchView(viewId) {
 
   if (viewId === 'habitsView') renderHabits();
   if (viewId === 'goalsView') renderGoals();
-  if (viewId === 'templatesView') renderTemplates();
+  if (viewId === 'archiveView') renderArchives();
+  if (viewId === 'changelogView') handleRefreshChangelog();
 }
 
 // ============================================================
@@ -1855,7 +2121,7 @@ async function init() {
     priority: t.priority || null
   }));
   habits = await window.electronAPI.loadHabits();
-  templates = await window.electronAPI.loadTemplates();
+  archives = await window.electronAPI.loadArchives();
   goals = await window.electronAPI.loadGoals();
   updateSortDisplay(currentSort);
   render();
@@ -1974,33 +2240,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 滑条拖拽中：仅本地更新 UI，不触发热重绘
   document.getElementById('goalsList')?.addEventListener('input', (e) => {
     if (e.target.classList.contains('kr-progress-slider')) {
       const val = parseInt(e.target.value, 10);
-      // 更新百分比文字
       const pctSpan = e.target.parentElement.querySelector('.kr-pct');
       if (pctSpan) {
         pctSpan.textContent = val + '%';
         pctSpan.style.color = val >= 100 ? 'var(--success-color, #2e7d32)' : 'var(--text-primary)';
       }
-      // 更新所属目标的进度条和头部统计
       const goalCard = e.target.closest('.goal-card');
       if (goalCard) {
         const goalId = goalCard.dataset.goalId;
         const goal = goals.find(g => g.id === goalId);
         if (goal) {
-          // 找到被拖拽的 KR 并更新内存中的进度
           const kr = goal.keyResults.find(k => k.id === e.target.dataset.krId);
           if (kr) kr.progress = val;
-          // 重新计算总体进度
           const totalKr = goal.keyResults.length;
           const completedKr = goal.keyResults.filter(k => k.progress >= 100).length;
           const overallProgress = totalKr > 0 ? Math.round(goal.keyResults.reduce((s, k) => s + k.progress, 0) / totalKr) : 0;
-          // 更新进度条
           const fill = goalCard.querySelector('.goal-progress-fill');
           if (fill) fill.style.width = overallProgress + '%';
-          // 更新头部文字
           const headerText = goalCard.querySelector('.goal-progress-text');
           if (headerText) headerText.textContent = overallProgress + '% · ' + completedKr + '/' + totalKr + ' KR';
         }
@@ -2008,7 +2267,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 滑条释放后：保存数据
   document.getElementById('goalsList')?.addEventListener('change', async (e) => {
     if (e.target.classList.contains('kr-progress-slider')) {
       const goalId = e.target.dataset.goalId;
@@ -2016,19 +2274,20 @@ document.addEventListener('DOMContentLoaded', () => {
       await handleKrProgressChange(goalId, krId, e.target.value);
     }
   });
+  
+  archiveBtn?.addEventListener('click', handleArchiveCompleted);
 
-  // 模板事件
-  document.getElementById('saveAsTemplateBtn')?.addEventListener('click', handleSaveAsTemplate);
-
-  document.getElementById('templatesList')?.addEventListener('click', async (e) => {
-    if (e.target.closest('.apply-template-btn')) {
-      const btn = e.target.closest('.apply-template-btn');
-      await handleApplyTemplate(btn.dataset.templateId);
-    } else if (e.target.closest('.delete-template-btn')) {
-      const btn = e.target.closest('.delete-template-btn');
-      await handleDeleteTemplate(btn.dataset.templateId);
+  document.getElementById('archiveList')?.addEventListener('click', async (e) => {
+    if (e.target.closest('.restore-archive-btn')) {
+      const btn = e.target.closest('.restore-archive-btn');
+      await handleRestoreArchive(btn.dataset.archiveId);
+    } else if (e.target.closest('.delete-archive-btn')) {
+      const btn = e.target.closest('.delete-archive-btn');
+      await handleDeleteArchive(btn.dataset.archiveId);
     }
   });
+
+  refreshChangelogBtn?.addEventListener('click', () => handleRefreshChangelog(true));
 
   addBtn.addEventListener('click', addTask);
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
@@ -2070,6 +2329,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    if (e.target.closest('.archive-task-btn')) {
+      const task = tasks.find(t => t.id === id);
+      if (task) await handleArchiveSingleTask(task);
+      return;
+    }
     if (e.target.closest('.edit-btn')) {
       const task = tasks.find(t => t.id === id);
       if (task) openEditModal(task);
@@ -2121,7 +2385,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         expandedTaskIds.add(id);
         await window.electronAPI.saveTodos(tasks);
-        // 局部插入新子任务 DOM，不触发全量重绘
         const list = container.querySelector('.subtask-list') || container.querySelector('ul');
         if (list) {
           const li = document.createElement('li');
@@ -2151,7 +2414,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (task) {
         task.subtasks = task.subtasks.filter(st => st.id !== subtaskId);
         await window.electronAPI.saveTodos(tasks);
-        // 局部删除 DOM 节点，不触发全量重绘
         subtaskItem.remove();
       }
       return;
@@ -2269,16 +2531,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const activePanel = document.querySelector('.view-panel.active');
     if (activePanel && activePanel.id !== 'settingsView') {
       previousViewId = activePanel.id;
-    }
-    // 设置视图平滑过渡到设置
-    if (activePanel && activePanel.id !== 'settingsView') {
       activePanel.classList.remove('active');
       activePanel.classList.add('exit-left');
       setTimeout(() => {
         activePanel.classList.remove('exit-left');
       }, 280);
     }
-    // 清除所有导航按钮的 active 状态，避免误填充
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     settingsView.classList.remove('enter-right', 'enter-left', 'exit-left', 'exit-right');
     settingsView.classList.add('active');
@@ -2289,14 +2547,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeSettingsView() {
     settingsView.classList.remove('active');
     settingsBtn.classList.remove('active');
-    // 恢复之前视图的导航按钮 active 状态
     document.querySelectorAll('.nav-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.view === previousViewId);
     });
     const target = document.getElementById(previousViewId);
     if (target) {
-      target.classList.remove('active', 'enter-right', 'enter-left', 'exit-left', 'exit-right');
+      target.classList.remove('enter-right', 'enter-left', 'exit-left', 'exit-right');
       target.classList.add('active');
+      target.style.visibility = '';
     }
     log('关闭设置面板');
   }
@@ -2414,6 +2672,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('todo_due_enabled');
       localStorage.removeItem('todo_debug_mode');
       localStorage.removeItem('todo_compact_mode');
+      localStorage.removeItem('todo_archive_confirm');
       localStorage.removeItem('todo_log_level');
       localStorage.removeItem('todo_due_threshold');
       localStorage.removeItem('todo_due_count_today');

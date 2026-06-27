@@ -69,7 +69,7 @@ function logMessage(level, ...args) {
 
 const getDataPath = () => path.join(app.getPath('userData'), 'todos.json');
 const getHabitsPath = () => path.join(app.getPath('userData'), 'habits.json');
-const getTemplatesPath = () => path.join(app.getPath('userData'), 'templates.json');
+const getArchivePath = () => path.join(app.getPath('userData'), 'archives.json');
 const getGoalsPath = () => path.join(app.getPath('userData'), 'goals.json');
 
 let tasksCache = [];
@@ -110,14 +110,14 @@ async function loadHabits() {
 async function saveHabits(habits) {
   await fs.writeFile(getHabitsPath(), JSON.stringify(habits, null, 2));
 }
-async function loadTemplates() {
+async function loadArchives() {
   try {
-    const data = await fs.readFile(getTemplatesPath(), 'utf-8');
+    const data = await fs.readFile(getArchivePath(), 'utf-8');
     return JSON.parse(data);
   } catch { return []; }
 }
-async function saveTemplates(templates) {
-  await fs.writeFile(getTemplatesPath(), JSON.stringify(templates, null, 2));
+async function saveArchives(archives) {
+  await fs.writeFile(getArchivePath(), JSON.stringify(archives, null, 2));
 }
 async function loadGoals() {
   try {
@@ -166,7 +166,7 @@ app.whenReady().then(async () => {
   }
   await ensureDataFile(getDataPath());
   await ensureDataFile(getHabitsPath());
-  await ensureDataFile(getTemplatesPath());
+  await ensureDataFile(getArchivePath());
   await ensureDataFile(getGoalsPath());
   await loadTodos();
   createWindow();
@@ -183,8 +183,8 @@ ipcMain.handle('todo:save', (event, todos) => saveTodos(todos));
 ipcMain.handle('habit:load', loadHabits);
 ipcMain.handle('habit:save', (event, habits) => saveHabits(habits));
 
-ipcMain.handle('template:load', loadTemplates);
-ipcMain.handle('template:save', (event, templates) => saveTemplates(templates));
+ipcMain.handle('archive:load', loadArchives);
+ipcMain.handle('archive:save', (event, archives) => saveArchives(archives));
 
 ipcMain.handle('goal:load', loadGoals);
 ipcMain.handle('goal:save', (event, goals) => saveGoals(goals));
@@ -241,7 +241,7 @@ ipcMain.handle('update:check', async () => {
       signal: controller.signal,
       headers: {
         'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'Todo-List-Desktop-App/2.0.0'
+        'User-Agent': 'Todo-List-Desktop-App/2.1.0'
       }
     });
     clearTimeout(timeoutId);
@@ -266,6 +266,54 @@ ipcMain.handle('update:check', async () => {
     const data = await response.json();
     logMessage('info', '更新检查成功，最新版本', data.tag_name);
     return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('网络请求超时，请检查网络连接');
+    }
+    throw error;
+  }
+});
+
+ipcMain.handle('changelog:fetch', async () => {
+  logMessage('info', '开始拉取更新日志');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const token = process.env.GITHUB_TOKEN || '';
+    const headers = {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'Todo-List-Desktop-App/2.1.0'
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch('https://api.github.com/repos/junloye/Todo-List/commits?per_page=30', {
+      signal: controller.signal,
+      headers
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorMsg = `网络错误: HTTP ${response.status}`;
+      if (response.status === 403) {
+        const remaining = response.headers.get('x-ratelimit-remaining');
+        const resetTime = response.headers.get('x-ratelimit-reset');
+        if (remaining === '0' && resetTime) {
+          const resetDate = new Date(parseInt(resetTime) * 1000);
+          errorMsg = `API 请求限制已用尽，将在 ${resetDate.toLocaleTimeString()} 重置`;
+        } else {
+          errorMsg = `GitHub API 请求过于频繁，请稍后重试 (剩余 ${remaining})`;
+        }
+      } else if (response.status === 404) {
+        errorMsg = '未找到仓库提交记录';
+      }
+      throw new Error(errorMsg);
+    }
+
+    const data = await response.json();
+    logMessage('info', '更新日志拉取成功，共', data.length, '条提交');
+    return { success: true, data };
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {

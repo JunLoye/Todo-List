@@ -7,8 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importTodos: () => ipcRenderer.invoke('todo:import'),
   loadHabits: () => ipcRenderer.invoke('habit:load'),
   saveHabits: (habits) => ipcRenderer.invoke('habit:save', habits),
-  loadTemplates: () => ipcRenderer.invoke('template:load'),
-  saveTemplates: (templates) => ipcRenderer.invoke('template:save', templates),
+  loadArchives: () => ipcRenderer.invoke('archive:load'),
+  saveArchives: (archives) => ipcRenderer.invoke('archive:save', archives),
   loadGoals: () => ipcRenderer.invoke('goal:load'),
   saveGoals: (goals) => ipcRenderer.invoke('goal:save', goals),
   openUrl: async (url) => {
@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
   checkUpdate: () => ipcRenderer.invoke('update:check'),
+  fetchChangelog: () => ipcRenderer.invoke('changelog:fetch'),
   log: (message, level = 'info') => ipcRenderer.invoke('log', level, message),
   configGet: () => ipcRenderer.invoke('config:get'),
   setLogLevel: (level) => ipcRenderer.invoke('config:setLogLevel', level),

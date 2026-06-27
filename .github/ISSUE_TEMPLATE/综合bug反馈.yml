@@ -40,7 +40,7 @@ body:
     description: "上传可能的日志、截图或其他附件"
     placeholder: "先点击这个文本框，然后将文件拖拽到文本框中以上传"
   validations:
-    required: true
+    required: false
 
 - type: textarea
   id: "yml-6"
