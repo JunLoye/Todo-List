@@ -15,11 +15,13 @@
   width: 90%;
   max-width: 500px;
   overflow: visible;
+  animation: dialogPopIn 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .modal::backdrop,
 .custom-dialog::backdrop {
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
+  animation: backdropFadeIn 0.2s ease;
 }
 .modal-content,
 .dialog-content {
@@ -96,14 +98,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  animation: toastIn 0.2s ease forwards;
   pointer-events: auto;
   border-width: 1px;
   border-style: solid;
+  animation: toastIn 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
-@keyframes toastIn {
-  from { transform: translateY(12px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+
+.toast.removing {
+  animation: toastOut 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 .toast.success {
   background: var(--toast-success-bg);
@@ -128,17 +130,15 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 .danger-btn:hover {
   background: #b71c1c;
   border-color: #b71c1c;
-  box-shadow: 0 6px 18px rgba(210, 47, 47, 0.15);
-  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(183,28,28,0.25);
 }
 .danger-btn:active {
-  transform: translateY(0);
-  box-shadow: none;
 }
 
 .about-info {
@@ -182,15 +182,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.18s ease;
   flex-shrink: 0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 .theme-btn:hover {
-  transform: scale(1.12);
   border-color: var(--text-secondary);
 }
 .theme-btn:active {
-  transform: scale(0.92);
 }
 .theme-btn.active {
   border-color: var(--text-primary);
@@ -245,6 +244,7 @@
   display: inline-block;
   width: 44px;
   height: 24px;
+  -webkit-tap-highlight-color: transparent;
 }
 .toggle-switch input {
   opacity: 0;
@@ -256,8 +256,9 @@
   cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
   background-color: var(--border-color);
-  transition: 0.2s;
   border-radius: 24px;
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 }
 .slider::before {
   position: absolute;
@@ -267,14 +268,24 @@
   left: 3px;
   bottom: 3px;
   background-color: white;
-  transition: 0.2s;
   border-radius: 50%;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 input:checked + .slider {
   background-color: #0078d4;
 }
 input:checked + .slider::before {
   transform: translateX(20px);
+  box-shadow: 0 1px 6px rgba(0,120,212,0.3);
+}
+
+/* 开关点击反馈 */
+.toggle-switch:active .slider::before {
+  transform: scale(0.9);
+}
+.toggle-switch input:checked:active + .slider::before {
+  transform: translateX(20px) scale(0.9);
 }
 
 .option-item {
@@ -357,12 +368,13 @@ input:checked + .slider::before {
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 12px;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .habit-card:hover {
   border-color: var(--text-secondary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
 }
 
 .habit-header {
@@ -425,13 +437,17 @@ input:checked + .slider::before {
   font-size: 0.65rem;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
   position: relative;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .habit-checkin-day:hover {
   border-color: var(--text-secondary);
+  transform: scale(1.1);
 }
+
+/* .habit-checkin-day:active {} */
 
 .habit-checkin-day.checked {
   background: #4caf50;
@@ -461,12 +477,13 @@ input:checked + .slider::before {
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 16px;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .goal-card:hover {
   border-color: var(--text-secondary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
 }
 
 .goal-header {
@@ -503,7 +520,7 @@ input:checked + .slider::before {
   height: 100%;
   background: var(--filter-active-bg);
   border-radius: 3px;
-  transition: width 0.4s ease;
+  animation: progressFill 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .goal-kr-list {
@@ -565,12 +582,10 @@ input:checked + .slider::before {
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 12px;
-  transition: all 0.2s ease;
 }
 
 .archive-card:hover {
   border-color: var(--text-secondary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .archive-header {
@@ -688,7 +703,6 @@ input:checked + .slider::before {
   gap: 12px;
   padding: 8px 12px;
   border-radius: 8px;
-  transition: background 0.15s ease;
 }
 
 .changelog-item:hover {
@@ -733,12 +747,10 @@ input:checked + .slider::before {
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 16px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .changelog-version:hover {
   border-color: var(--text-secondary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .changelog-version-header {
@@ -863,7 +875,6 @@ input:checked + .slider::before {
   color: var(--text-primary);
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.15s;
   box-sizing: border-box;
 }
 

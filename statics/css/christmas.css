@@ -23,6 +23,7 @@ body[data-theme="christmas"] {
   opacity: 0.95;
   mix-blend-mode: normal;
   z-index: 4;
+  animation: subtlePulse 3s ease-in-out infinite;
 }
 
 /* Snowfall subtle overlay in content area */

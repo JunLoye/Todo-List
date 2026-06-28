@@ -67,12 +67,12 @@
     font-size: 0.9rem;
     color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .filter-btn:hover {
     background: var(--btn-secondary-hover-bg);
-    transform: translateX(2px);
   }
   
   .filter-btn.active {
@@ -126,13 +126,13 @@
     justify-content: center;
     gap: 8px;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .settings-entry-btn:hover {
     background: var(--btn-secondary-hover-bg);
     border-color: var(--text-secondary);
-    transform: translateY(-1px);
   }
   
   .settings-entry-btn.active {
@@ -140,11 +140,6 @@
     color: var(--filter-active-color);
     border-color: var(--filter-active-color);
     font-weight: 500;
-  }
-  
-  .settings-entry-btn.active:hover {
-    background: var(--filter-active-bg);
-    transform: none;
   }
 
   .filter-btn {
@@ -161,6 +156,7 @@
     min-width: 20px;
     text-align: center;
     line-height: 1.6;
+    transition: background 0.2s ease, color 0.2s ease;
   }
   .filter-btn.active .filter-count {
     background: var(--filter-active-color);
@@ -186,15 +182,15 @@
   font-size: 0.9rem;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
   display: flex;
   align-items: center;
   gap: 10px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nav-btn:hover {
   background: var(--btn-secondary-hover-bg);
-  transform: translateX(2px);
 }
 
 .nav-btn.active {

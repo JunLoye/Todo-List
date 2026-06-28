@@ -21,6 +21,9 @@ const themeBtns = document.querySelectorAll('.theme-btn');
 const dueDateEnableToggle = document.getElementById('dueDateEnableToggle');
 const compactModeToggle = document.getElementById('compactModeToggle');
 const archiveConfirmToggle = document.getElementById('archiveConfirmToggle');
+const deleteConfirmToggle = document.getElementById('deleteConfirmToggle');
+const clearConfirmToggle = document.getElementById('clearConfirmToggle');
+const resetConfirmToggle = document.getElementById('resetConfirmToggle');
 const debugModeToggle = document.getElementById('debugModeToggle');
 const importDataBtn = document.getElementById('importDataBtn');
 const exportDataBtn = document.getElementById('exportDataBtn');
@@ -89,8 +92,6 @@ let currentSearch = '';
 let activeTagFilter = '';
 let editingTaskId = null;
 let expandedTaskIds = new Set();
-let _initialRenderDone = false;
-let _goalsInitialRender = false;
 
 const APP_CONFIG = {
   theme: 'light',
@@ -493,10 +494,8 @@ function showToast(message, type = 'success') {
 
   toastContainer.appendChild(toast);
   setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(-10px)';
-    toast.style.transition = 'opacity 0.15s, transform 0.15s';
-    setTimeout(() => toast.remove(), 150);
+    toast.classList.add('removing');
+    setTimeout(() => toast.remove(), 250);
   }, 2500);
 }
 
@@ -554,10 +553,6 @@ function escapeHtml(text) {
 
 function render() {
   todoListEl.innerHTML = '';
-  // 首次渲染时播放入场动画
-  if (!_initialRenderDone) {
-    todoListEl.classList.add('initial-render');
-  }
   let filtered = [...tasks];
 
   // 空状态提示
@@ -787,15 +782,6 @@ function render() {
   const completed = tasks.filter(t => t.completed).length;
   const active = total - completed;
 
-  // 首次渲染后移除入场动画类，防止展开/折叠等操作重复播放
-  if (!_initialRenderDone) {
-    _initialRenderDone = true;
-    // 通过 setTimeout 在下一次微任务后移除，确保动画已触发
-    setTimeout(() => {
-      todoListEl.classList.remove('initial-render');
-    }, 350);
-  }
-
   // 计数变化时弹出动画（仅值变化时触发，不移除类防闪烁）
   const updateCount = (el, val) => {
     if (parseInt(el.textContent, 10) !== val) {
@@ -982,6 +968,12 @@ async function addTask() {
 }
 
 async function deleteTask(id) {
+  const skipConfirm = localStorage.getItem('todo_delete_confirm') === 'false';
+  if (!skipConfirm) {
+    const task = tasks.find(t => t.id === id);
+    const confirm = await showConfirmDialog(`确定要删除任务「${task ? task.title : ''}」吗？`);
+    if (!confirm) return;
+  }
   tasks = tasks.filter(t => t.id !== id);
   expandedTaskIds.delete(id);
   await window.electronAPI.saveTodos(tasks);
@@ -1044,16 +1036,18 @@ async function clearCompleted() {
     showToast('当前没有已完成的任务', 'error');
     return;
   }
-  const confirm = await showConfirmDialog(`确定要清除这 ${completedCount} 个已完成的任务吗？`);
-  if (confirm) {
-    const toRemove = tasks.filter(t => t.completed).map(t => t.id);
-    tasks = tasks.filter(t => !t.completed);
-    toRemove.forEach(id => expandedTaskIds.delete(id));
-    await window.electronAPI.saveTodos(tasks);
-    render();
-    showToast('已完成任务清理完毕');
-    log(`清理已完成任务，共 ${completedCount} 项`);
+  const skipConfirm = localStorage.getItem('todo_clear_confirm') === 'false';
+  if (!skipConfirm) {
+    const confirm = await showConfirmDialog(`确定要清除这 ${completedCount} 个已完成的任务吗？`);
+    if (!confirm) return;
   }
+  const toRemove = tasks.filter(t => t.completed).map(t => t.id);
+  tasks = tasks.filter(t => !t.completed);
+  toRemove.forEach(id => expandedTaskIds.delete(id));
+  await window.electronAPI.saveTodos(tasks);
+  render();
+  showToast('已完成任务清理完毕');
+  log(`清理已完成任务，共 ${completedCount} 项`);
 }
 
 function setFilter(filter) {
@@ -1103,15 +1097,6 @@ async function importData() {
   }
 }
 
-function styleSpin() {
-  if (!document.getElementById('spinStyle')) {
-    const style = document.createElement('style');
-    style.id = 'spinStyle';
-    style.innerHTML = '@keyframes spin { 100% { transform: rotate(360deg); } }';
-    document.head.appendChild(style);
-  }
-}
-
 function loadConfig() {
   let theme = localStorage.getItem('todo_theme') || 'light';
   const validThemes = ['light', 'dark', 'blue', 'green', 'purple', 'orange', 'pink', 'christmas'];
@@ -1130,6 +1115,17 @@ function loadConfig() {
   dueDateEnableToggle.checked = APP_CONFIG.dueDateEnabled;
   applyDueDateFeatureState();
 
+  function loadToggleSetting(id, key, defaultValue = true) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const saved = localStorage.getItem(key);
+    el.checked = saved !== null ? saved === 'true' : defaultValue;
+    el.addEventListener('change', (e) => {
+      localStorage.setItem(key, e.target.checked);
+      log(`${el.closest('.settings-item')?.querySelector('.settings-title')?.textContent || key}: ${e.target.checked ? '启用' : '禁用'}`);
+    });
+  }
+
   const archiveConfirm = localStorage.getItem('todo_archive_confirm');
   if (archiveConfirmToggle) {
     archiveConfirmToggle.checked = archiveConfirm !== 'false';
@@ -1138,6 +1134,10 @@ function loadConfig() {
       log(`归档确认弹窗: ${e.target.checked ? '启用' : '禁用'}`);
     });
   }
+
+  loadToggleSetting('deleteConfirmToggle', 'todo_delete_confirm');
+  loadToggleSetting('clearConfirmToggle', 'todo_clear_confirm');
+  loadToggleSetting('resetConfirmToggle', 'todo_reset_confirm');
 
   const debug = localStorage.getItem('todo_debug_mode') === 'true';
   APP_CONFIG.debugMode = debug;
@@ -1472,8 +1472,6 @@ function renderGoals() {
     return;
   }
   container.innerHTML = goals.map(goal => {
-    // 首次渲染后标记，使进度条动画只播放一次
-    _goalsInitialRender = true;
     const totalKr = goal.keyResults.length;
     const completedKr = goal.keyResults.filter(kr => kr.progress >= 100).length;
     const overallProgress = totalKr > 0 ? Math.round(goal.keyResults.reduce((s, kr) => s + kr.progress, 0) / totalKr) : 0;
@@ -1494,7 +1492,7 @@ function renderGoals() {
         <span class="goal-progress-text">${overallProgress}% · ${completedKr}/${totalKr} KR</span>
       </div>
       <div class="goal-progress-bar">
-        <div class="goal-progress-fill${!_goalsInitialRender ? ' animate' : ''}" style="width:${overallProgress}%"></div>
+        <div class="goal-progress-fill" style="width:${overallProgress}%"></div>
       </div>
       <div class="goal-kr-list">${krHtml}</div>
       <div class="goal-actions">
@@ -2024,56 +2022,38 @@ function getCachedChangelogFromStorage() {
 }
 
 // ============================================================
-// 视图切换 (带动画)
+// 视图切换
 // ============================================================
 let _currentViewId = 'tasksView';
-let _viewAnimating = false;
 
 function switchView(viewId) {
-  if (_viewAnimating || viewId === _currentViewId) return;
+  if (viewId === _currentViewId) return;
 
   if (settingsView.classList.contains('active')) {
     settingsView.classList.remove('active');
     settingsBtn.classList.remove('active');
   }
 
-  _viewAnimating = true;
-
   const currentEl = document.getElementById(_currentViewId);
   const targetEl = document.getElementById(viewId);
-  if (!targetEl) { _viewAnimating = false; return; }
-
-  const viewOrder = ['tasksView', 'habitsView', 'goalsView', 'archiveView', 'changelogView'];
-  const curIdx = viewOrder.indexOf(_currentViewId);
-  const tgtIdx = viewOrder.indexOf(viewId);
-  const isForward = tgtIdx > curIdx;
+  if (!targetEl) return;
 
   if (currentEl) {
-    currentEl.classList.remove('active', 'enter-right', 'enter-left');
-    currentEl.classList.add(isForward ? 'exit-left' : 'exit-right');
+    currentEl.classList.remove('active', 'animating-in');
+    currentEl.classList.add('animating-out');
+    // 清除动画状态
+    setTimeout(() => {
+      currentEl.classList.remove('animating-out');
+    }, 200);
   }
 
-  targetEl.classList.remove('exit-left', 'exit-right', 'enter-right', 'enter-left');
-  targetEl.classList.add(isForward ? 'enter-right' : 'enter-left');
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      targetEl.classList.remove('enter-right', 'enter-left');
-      targetEl.classList.add('active');
-
-      if (currentEl) {
-        currentEl.style.visibility = 'hidden';
-
-        setTimeout(() => {
-          currentEl.classList.remove('exit-left', 'exit-right');
-          currentEl.style.visibility = '';
-          _viewAnimating = false;
-        }, 230);
-      } else {
-        _viewAnimating = false;
-      }
-    });
-  });
+  targetEl.classList.remove('animating-out');
+  targetEl.classList.add('animating-in');
+  targetEl.classList.add('active');
+  // 动画结束后移除标记
+  setTimeout(() => {
+    targetEl.classList.remove('animating-in');
+  }, 300);
 
   document.querySelectorAll('.nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.view === viewId);
@@ -2531,31 +2511,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const activePanel = document.querySelector('.view-panel.active');
     if (activePanel && activePanel.id !== 'settingsView') {
       previousViewId = activePanel.id;
-      activePanel.classList.remove('active');
-      activePanel.classList.add('exit-left');
+      activePanel.classList.remove('active', 'animating-in');
+      activePanel.classList.add('animating-out');
       setTimeout(() => {
-        activePanel.classList.remove('exit-left');
-      }, 280);
+        activePanel.classList.remove('animating-out');
+      }, 200);
     }
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    settingsView.classList.remove('enter-right', 'enter-left', 'exit-left', 'exit-right');
+    settingsView.classList.remove('animating-out');
+    settingsView.classList.add('animating-in');
     settingsView.classList.add('active');
     settingsBtn.classList.add('active');
+    setTimeout(() => {
+      settingsView.classList.remove('animating-in');
+    }, 300);
     log('打开设置面板');
   }
 
   function closeSettingsView() {
-    settingsView.classList.remove('active');
+    settingsView.classList.remove('active', 'animating-in');
+    settingsView.classList.add('animating-out');
     settingsBtn.classList.remove('active');
     document.querySelectorAll('.nav-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.view === previousViewId);
     });
     const target = document.getElementById(previousViewId);
     if (target) {
-      target.classList.remove('enter-right', 'enter-left', 'exit-left', 'exit-right');
+      target.classList.remove('animating-out');
+      target.classList.add('animating-in');
       target.classList.add('active');
-      target.style.visibility = '';
+      setTimeout(() => {
+        target.classList.remove('animating-in');
+      }, 300);
     }
+    setTimeout(() => {
+      settingsView.classList.remove('animating-out');
+    }, 200);
     log('关闭设置面板');
   }
 
@@ -2666,25 +2657,27 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   resetSettingsBtn.addEventListener('click', async () => {
-    const confirm = await showConfirmDialog('确定恢复默认设置吗？');
-    if (confirm) {
-      localStorage.removeItem('todo_theme');
-      localStorage.removeItem('todo_due_enabled');
-      localStorage.removeItem('todo_debug_mode');
-      localStorage.removeItem('todo_compact_mode');
-      localStorage.removeItem('todo_archive_confirm');
-      localStorage.removeItem('todo_log_level');
-      localStorage.removeItem('todo_due_threshold');
-      localStorage.removeItem('todo_due_count_today');
-      loadConfig();
-      if (window.logLevelSelect) {
-        window.logLevelSelect.setValue('info', false);
-      }
-      updateSortDisplay(currentSort);
-      render();
-      showToast('设置偏好已恢复默认');
-      log('重置设置');
+    const skipConfirm = localStorage.getItem('todo_reset_confirm') === 'false';
+    if (!skipConfirm) {
+      const confirm = await showConfirmDialog('确定恢复默认设置吗？');
+      if (!confirm) return;
     }
+    localStorage.removeItem('todo_theme');
+    localStorage.removeItem('todo_due_enabled');
+    localStorage.removeItem('todo_debug_mode');
+    localStorage.removeItem('todo_compact_mode');
+    localStorage.removeItem('todo_archive_confirm');
+    localStorage.removeItem('todo_log_level');
+    localStorage.removeItem('todo_due_threshold');
+    localStorage.removeItem('todo_due_count_today');
+    loadConfig();
+    if (window.logLevelSelect) {
+      window.logLevelSelect.setValue('info', false);
+    }
+    updateSortDisplay(currentSort);
+    render();
+    showToast('设置偏好已恢复默认');
+    log('重置设置');
   });
 
   openGithubBtn.addEventListener('click', async () => {
@@ -2778,8 +2771,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
       </svg> 检查中...`;
     checkUpdateBtn.disabled = true;
-
-    styleSpin();
 
     try {
       const data = await window.electronAPI.checkUpdate();

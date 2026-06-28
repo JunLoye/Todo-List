@@ -104,6 +104,7 @@ body[data-theme="spring-festival"] {
   background-position: center top;
   opacity: 0.95;
   z-index: 4;
+  animation: subtlePulse 3s ease-in-out infinite;
 }
 
 /* 内容区轻微花纹叠层 */
